@@ -1,0 +1,1521 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kilat UTS Sistem Operasi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap">
+<style>
+/* Konsep: lembar belajar satu halaman dengan nav menempel di atas.
+   Motif utama = blok Gantt berwarna per proses; warna status proses (siap, jalan, tunggu) jadi sistem warna semantik. */
+:root {
+  --bg: #F2F5F9;
+  --surface: #FFFFFF;
+  --surface2: #E8EDF3;
+  --ink: #13202E;
+  --muted: #536174;
+  --line: #D3DAE3;
+  --accent: #0B6E69;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #D8EFEC;
+  --warn: #8F4B00;
+  --warn-soft: #FCEBD0;
+  --bad: #B3261E;
+  --bad-soft: #FBE2DF;
+  --good: #17713A;
+  --good-soft: #DCF2E2;
+  --info: #1B58B5;
+  --info-soft: #DFEAFA;
+  --p1: #2F6FDE; --p2: #C2410C; --p3: #2B8A3E; --p4: #8E3FC1;
+  --p5: #0B7285; --p6: #C2255C; --p7: #5C677D; --p8: #A16207;
+  --on-p: #FFFFFF;
+  --font-display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --font-body: 'Hanken Grotesk', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0D141B; --surface: #151E27; --surface2: #1D2833; --ink: #E7EDF3; --muted: #94A2B2; --line: #2A3643;
+    --accent: #4FD1C5; --accent-ink: #06201E; --accent-soft: #123532;
+    --warn: #F2B35B; --warn-soft: #3A2A10; --bad: #FF8E86; --bad-soft: #3D1B19;
+    --good: #6FD58D; --good-soft: #14301E; --info: #7DB0FF; --info-soft: #14284A;
+    --p1: #6EA2FF; --p2: #FF8A5B; --p3: #5FD27F; --p4: #C08CF0; --p5: #4FD0E3; --p6: #F77FA6; --p7: #A3AEC4; --p8: #F0B94A;
+    --on-p: #0B1118;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0D141B; --surface: #151E27; --surface2: #1D2833; --ink: #E7EDF3; --muted: #94A2B2; --line: #2A3643;
+  --accent: #4FD1C5; --accent-ink: #06201E; --accent-soft: #123532;
+  --warn: #F2B35B; --warn-soft: #3A2A10; --bad: #FF8E86; --bad-soft: #3D1B19;
+  --good: #6FD58D; --good-soft: #14301E; --info: #7DB0FF; --info-soft: #14284A;
+  --p1: #6EA2FF; --p2: #FF8A5B; --p3: #5FD27F; --p4: #C08CF0; --p5: #4FD0E3; --p6: #F77FA6; --p7: #A3AEC4; --p8: #F0B94A;
+  --on-p: #0B1118;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 4.5rem; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 16px; line-height: 1.6;
+  margin: 0; padding-inline: 16px; padding-block: 0 4rem;
+  -webkit-text-size-adjust: 100%;
+}
+.wrap { max-width: 1040px; margin-inline: auto; }
+h1, h2, h3, h4 { font-family: var(--font-display); line-height: 1.15; text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+p { margin: 0 0 0.8em; max-width: 68ch; }
+a { color: var(--accent); }
+code, .mono { font-family: var(--font-mono); font-size: 0.88em; }
+code { background: var(--surface2); padding: 0.1em 0.4em; border-radius: 5px; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+button { font: inherit; color: inherit; cursor: pointer; }
+.tnum, table { font-variant-numeric: tabular-nums; }
+
+/* ---------- nav ---------- */
+.topbar {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
+  background: var(--bg); border-bottom: 1px solid var(--line);
+  margin-inline: -16px; padding-inline: 16px;
+}
+.topbar-in { max-width: 1040px; margin-inline: auto; display: flex; align-items: center; gap: 12px; min-height: 52px; }
+.brand { font-family: var(--font-display); font-weight: 800; font-size: 1.05rem; white-space: nowrap; }
+.brand span { color: var(--accent); }
+.chips { display: flex; gap: 6px; overflow-x: auto; flex: 1; min-width: 0; padding-block: 8px; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chips a {
+  white-space: nowrap; text-decoration: none; color: var(--muted); font-size: 0.86rem; font-weight: 600;
+  padding: 5px 11px; border-radius: 999px; border: 1px solid transparent;
+}
+.chips a:hover { color: var(--ink); background: var(--surface2); }
+.chips a.on { color: var(--accent-ink); background: var(--accent); }
+.prog { font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
+.prog b { color: var(--accent); }
+@media (max-width: 560px) { .brand { display: none; } }
+
+/* ---------- hero ---------- */
+.hero { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 2.2rem; padding-block: 2.6rem 2rem; align-items: center; }
+@media (max-width: 800px) { .hero { grid-template-columns: minmax(0, 1fr); } }
+.eyebrow { font-family: var(--font-mono); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); display: flex; flex-wrap: wrap; gap: 0.4rem 0.9rem; align-items: center; margin-bottom: 0.7rem; }
+.hero h1 { font-size: clamp(2.2rem, 6vw, 3.9rem); font-weight: 800; margin-bottom: 1rem; }
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero .lead { font-size: 1.12rem; color: var(--muted); }
+.paths { display: grid; gap: 8px; margin-top: 1.2rem; }
+.paths a {
+  display: grid; grid-template-columns: 5.2rem minmax(0, 1fr); gap: 10px; align-items: baseline;
+  text-decoration: none; color: var(--ink); background: var(--surface); border: 1px solid var(--line);
+  padding: 9px 13px; border-radius: var(--radius);
+}
+.paths a:hover { border-color: var(--accent); }
+.paths b { font-family: var(--font-mono); font-size: 0.82rem; color: var(--accent); }
+.paths span { font-size: 0.92rem; }
+
+.office { display: grid; gap: 0; }
+.layer { display: grid; grid-template-columns: 3.1rem minmax(0, 1fr); gap: 12px; align-items: center; padding: 12px 14px; border: 1px solid var(--line); background: var(--surface); }
+.layer + .layer { border-top: 0; }
+.layer:first-child { border-radius: var(--radius) var(--radius) 0 0; }
+.layer:last-child { border-radius: 0 0 var(--radius) var(--radius); }
+.layer .tag { font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700; text-align: center; padding: 6px 0; border-radius: 6px; background: var(--surface2); color: var(--muted); }
+.layer b { font-family: var(--font-display); font-size: 1.05rem; display: block; line-height: 1.2; }
+.layer small { color: var(--muted); font-size: 0.86rem; }
+.layer.os { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); padding-block: 16px; }
+.layer.os .tag { background: color-mix(in srgb, var(--accent-ink) 22%, transparent); color: var(--accent-ink); }
+.layer.os small { color: color-mix(in srgb, var(--accent-ink) 85%, transparent); }
+.arrow-down { text-align: center; font-family: var(--font-mono); color: var(--muted); font-size: 0.78rem; padding: 3px; }
+
+/* ---------- sections ---------- */
+section.sec { padding-block: 2.8rem 0.4rem; border-top: 1px solid var(--line); margin-top: 1.4rem; }
+.sec-head { display: grid; gap: 0.5rem; margin-bottom: 1.4rem; }
+.sec-head h2 { font-size: clamp(1.7rem, 4.2vw, 2.5rem); font-weight: 800; }
+.sec-head .lead { color: var(--muted); font-size: 1.04rem; margin: 0; }
+.dots { display: inline-flex; gap: 3px; align-items: center; }
+.dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--line); display: block; }
+.dots i.f { background: var(--accent); }
+h3 { font-size: 1.3rem; font-weight: 700; margin: 2rem 0 0.7rem; }
+h4 { font-size: 1.02rem; font-weight: 700; margin: 0 0 0.35rem; }
+.grid2, .grid3, .grid4 { display: grid; gap: 12px; }
+.grid2 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
+.grid3 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); }
+.grid4 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); }
+.grid2 > *, .grid3 > *, .grid4 > * { min-width: 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
+.card p:last-child, .card ul:last-child { margin-bottom: 0; }
+.card h4 + p { color: var(--muted); }
+.kw { font-family: var(--font-mono); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); font-weight: 700; display: block; margin-bottom: 4px; }
+ul.tight { margin: 0.3rem 0 0.8rem; padding-left: 1.2rem; }
+ul.tight li { margin-bottom: 0.25rem; }
+
+/* callouts */
+.note { border-radius: var(--radius); padding: 12px 15px; margin: 1rem 0; font-size: 0.97rem; max-width: 52rem; }
+.note > b:first-child { font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.09em; display: block; margin-bottom: 3px; }
+.note p:last-child { margin-bottom: 0; }
+.baby { background: var(--accent-soft); }
+.baby > b:first-child { color: var(--accent); }
+.write { background: var(--info-soft); }
+.write > b:first-child { color: var(--info); }
+.trap { background: var(--bad-soft); }
+.trap > b:first-child { color: var(--bad); }
+.mentor { background: transparent; border: 1.5px dashed var(--muted); }
+.mentor > b:first-child { color: var(--muted); }
+.formula { font-family: var(--font-mono); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 14px; margin: 0.5rem 0; overflow-x: auto; font-size: 0.95rem; }
+.formula b { color: var(--accent); }
+
+/* tables */
+.tw { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); margin: 0.7rem 0 1rem; }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); background: var(--surface2); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.num, th.num { text-align: right; font-family: var(--font-mono); }
+tr.best td { background: var(--good-soft); }
+tr.sum td { font-weight: 700; background: var(--surface2); }
+
+/* process chips + gantt */
+.pc { display: inline-block; min-width: 2.2rem; text-align: center; font-family: var(--font-mono); font-weight: 700; font-size: 0.78rem; padding: 2px 7px; border-radius: 6px; background: var(--p7); color: var(--on-p); }
+.pc.c0 { background: var(--p1); } .pc.c1 { background: var(--p2); } .pc.c2 { background: var(--p3); } .pc.c3 { background: var(--p4); }
+.pc.c4 { background: var(--p5); } .pc.c5 { background: var(--p6); } .pc.c6 { background: var(--p7); } .pc.c7 { background: var(--p8); }
+.gantt-wrap { overflow-x: auto; padding: 4px 4px 0; }
+.gantt { display: flex; position: relative; height: 46px; }
+.gantt .seg { flex: var(--d) 1 0; min-width: 0; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-weight: 700; font-size: 0.82rem; color: var(--on-p); border-right: 2px solid var(--surface); overflow: hidden; }
+.gantt .seg:first-child { border-radius: 8px 0 0 8px; }
+.gantt .seg:last-child { border-radius: 0 8px 8px 0; border-right: 0; }
+.gantt .seg:only-child { border-radius: 8px; }
+.gantt .seg.idle { background: repeating-linear-gradient(135deg, var(--surface2) 0 6px, var(--line) 6px 8px); color: var(--muted); }
+.ticks { position: relative; height: 22px; margin-top: 3px; }
+.ticks span { position: absolute; transform: translateX(-50%); font-family: var(--font-mono); font-size: 0.74rem; color: var(--muted); }
+.ticks span:first-child { transform: none; }
+.ticks span:last-child { transform: translateX(-100%); }
+.demo { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 14px 6px; margin: 0.8rem 0 1.2rem; }
+.demo-title { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
+.demo-title b { font-family: var(--font-display); font-size: 1.05rem; }
+.demo-title span { font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); }
+.stat-row { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 4px 0 10px; }
+.stat { display: grid; }
+.stat small { font-family: var(--font-mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.stat b { font-family: var(--font-mono); font-size: 1.3rem; }
+details.how { margin: 4px 0 10px; }
+details summary { cursor: pointer; font-weight: 600; color: var(--accent); }
+details.how > div { background: var(--surface2); border-radius: 8px; padding: 10px 14px; margin-top: 6px; font-family: var(--font-mono); font-size: 0.84rem; line-height: 1.75; overflow-x: auto; }
+
+/* controls */
+.ctl { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: end; margin: 8px 0 12px; }
+.ctl label { display: grid; gap: 3px; font-size: 0.78rem; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+input[type="number"], input[type="text"], select {
+  font: inherit; font-family: var(--font-mono); font-size: 0.95rem; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; min-width: 0; text-transform: none; letter-spacing: 0;
+}
+input[type="number"] { width: 5.2rem; }
+input[type="text"] { width: min(100%, 22rem); }
+.btn { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; font-weight: 600; font-size: 0.9rem; }
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.pri { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.pri:hover { color: var(--accent-ink); filter: brightness(1.08); }
+.btn.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.in-table input[type="number"] { width: 4.2rem; padding: 5px 8px; }
+.msg { font-size: 0.92rem; color: var(--bad); min-height: 1.3em; margin: 4px 0; }
+.sim-out { margin-top: 10px; }
+
+/* state machine */
+.sm { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px; }
+.sm svg { display: block; width: 100%; height: auto; max-width: 760px; margin-inline: auto; }
+.sm .node rect { fill: var(--surface2); stroke: var(--line); stroke-width: 2; }
+.sm .node text { fill: var(--ink); font-family: var(--font-mono); font-size: 14px; font-weight: 700; text-anchor: middle; dominant-baseline: middle; }
+.sm .node.cur rect { fill: var(--accent); stroke: var(--accent); }
+.sm .node.cur text { fill: var(--accent-ink); }
+.sm .edge { fill: none; stroke: var(--muted); stroke-width: 2; }
+.sm .edge.hot { stroke: var(--accent); stroke-width: 4; }
+.sm .elab { fill: var(--muted); font-family: var(--font-mono); font-size: 11.5px; }
+.sm marker path { fill: var(--muted); }
+.sm-status { min-height: 3.2em; margin: 6px 4px 8px; font-size: 0.97rem; }
+.sm-status.err { color: var(--bad); }
+
+/* memory visuals */
+.membar { display: flex; gap: 3px; height: 42px; margin: 4px 0 2px; }
+.hole { flex: var(--w) 1 0; min-width: 0; border: 1.5px solid var(--muted); border-radius: 6px; position: relative; overflow: hidden; background: repeating-linear-gradient(135deg, var(--surface2) 0 6px, var(--line) 6px 8px); }
+.hole .used { position: absolute; inset: 0 auto 0 0; width: var(--u); background: var(--accent); }
+.hole span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 0.74rem; font-weight: 700; color: var(--ink); text-shadow: 0 0 3px var(--surface), 0 0 3px var(--surface); }
+.bitbar { display: flex; height: 40px; border-radius: 8px; overflow: hidden; font-family: var(--font-mono); font-weight: 700; font-size: 0.82rem; margin: 6px 0; }
+.bitbar div { display: flex; align-items: center; justify-content: center; flex: var(--b) 1 0; min-width: 0; padding-inline: 4px; text-align: center; }
+.bitbar .pg { background: var(--info); color: var(--accent-ink); }
+.bitbar .of { background: var(--p8); color: var(--on-p); }
+.pyramid { display: grid; gap: 6px; }
+.pyramid div { padding: 10px 14px; border-radius: 8px; display: grid; grid-template-columns: 6.2rem minmax(0, 1fr); gap: 10px; align-items: baseline; background: var(--surface); border: 1px solid var(--line); }
+.pyramid b { font-family: var(--font-display); }
+.pyramid small { color: var(--muted); }
+.pyramid div:nth-child(1) { margin-inline: 0 18%; }
+.pyramid div:nth-child(2) { margin-inline: 0 12%; }
+.pyramid div:nth-child(3) { margin-inline: 0 6%; }
+@media (max-width: 560px) { .pyramid div { grid-template-columns: minmax(0, 1fr); gap: 2px; margin-inline: 0 !important; } }
+.layout-proc { display: grid; gap: 0; max-width: 360px; }
+.layout-proc div { padding: 9px 14px; border: 1.5px solid var(--line); background: var(--surface); font-family: var(--font-mono); font-size: 0.86rem; display: flex; justify-content: space-between; gap: 10px; }
+.layout-proc div + div { border-top: 0; }
+.layout-proc .gap { background: repeating-linear-gradient(135deg, var(--surface2) 0 6px, var(--line) 6px 8px); color: var(--muted); justify-content: center; }
+.layout-proc small { color: var(--muted); }
+.pcb { background: var(--surface); border: 2px solid var(--ink); border-radius: 12px; padding: 14px 16px; max-width: 420px; }
+.pcb-h { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid var(--ink); padding-bottom: 6px; margin-bottom: 8px; font-family: var(--font-mono); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; }
+.pcb dl { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 5px 14px; font-size: 0.92rem; }
+.pcb dt { font-family: var(--font-mono); font-size: 0.74rem; text-transform: uppercase; color: var(--muted); padding-top: 2px; }
+.pcb dd { margin: 0; }
+.flow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; margin: 10px 0; }
+.flow > div { flex: 1 1 150px; min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; font-size: 0.92rem; }
+.flow > div b { display: block; font-family: var(--font-display); }
+.flow > i { align-self: center; font-style: normal; color: var(--muted); font-family: var(--font-mono); }
+@media (max-width: 560px) { .flow > i { display: none; } }
+.timeline { display: grid; gap: 10px; margin: 8px 0 14px; }
+.tl { display: grid; grid-template-columns: 5.4rem minmax(0, 1fr); gap: 14px; }
+.tl .yr { font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); padding-top: 14px; }
+.tl .box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 15px; }
+.tl .box b { font-family: var(--font-display); font-size: 1.1rem; }
+@media (max-width: 560px) { .tl { grid-template-columns: minmax(0, 1fr); gap: 2px; } .tl .yr { padding-top: 0; } }
+
+/* trap + flash + quiz */
+details.fold { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 8px; }
+details.fold > summary { padding: 11px 15px; list-style: none; display: flex; gap: 10px; align-items: baseline; color: var(--ink); font-weight: 600; }
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary::before { content: '+'; font-family: var(--font-mono); color: var(--accent); font-weight: 800; flex: none; width: 1ch; }
+details.fold[open] > summary::before { content: '–'; }
+details.fold > div { padding: 0 15px 13px 38px; }
+details.fold.tr > summary { font-style: italic; }
+.q-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px; }
+.q-card .topic { font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.q-card p.q { font-weight: 600; margin: 4px 0 10px; max-width: none; }
+.opts { display: grid; gap: 6px; }
+.opt { text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; display: grid; grid-template-columns: 1.6rem minmax(0, 1fr); gap: 6px; }
+.opt b { font-family: var(--font-mono); color: var(--muted); }
+.opt:hover:not(:disabled) { border-color: var(--accent); }
+.opt.ok { background: var(--good-soft); border-color: var(--good); }
+.opt.no { background: var(--bad-soft); border-color: var(--bad); }
+.opt:disabled { cursor: default; }
+.expl { margin-top: 10px; font-size: 0.94rem; background: var(--surface2); border-radius: 8px; padding: 9px 12px; }
+.score { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 15px; margin-bottom: 12px; }
+.score b { font-family: var(--font-mono); font-size: 1.25rem; color: var(--accent); }
+.done { display: flex; justify-content: flex-end; margin-top: 1.6rem; }
+.done button { background: var(--surface); border: 1.5px solid var(--line); border-radius: 999px; padding: 7px 16px; font-weight: 700; font-size: 0.9rem; }
+.done button.on { background: var(--good-soft); border-color: var(--good); color: var(--good); }
+footer { margin-top: 3rem; padding-top: 1.4rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.9rem; }
+.big-line { font-family: var(--font-display); font-size: clamp(1.15rem, 2.6vw, 1.5rem); font-weight: 600; line-height: 1.4; max-width: 62ch; text-wrap: pretty; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-in">
+    <div class="brand">Kilat <span>SO</span></div>
+    <nav class="chips" id="chips" aria-label="Navigasi bab">
+      <a href="#satu-halaman">Satu Halaman</a>
+      <a href="#pengenal">Pengenal</a>
+      <a href="#b1">Dasar OS</a>
+      <a href="#b2">Sejarah</a>
+      <a href="#b3">Proses</a>
+      <a href="#b4">PCB</a>
+      <a href="#jadwal">Penjadwalan</a>
+      <a href="#memori">Memori</a>
+      <a href="#jebakan">Jebakan</a>
+      <a href="#kuis">Kuis</a>
+    </nav>
+    <div class="prog" id="prog" title="Bab yang sudah kamu tandai paham">Paham <b>0</b>/6</div>
+  </div>
+</div>
+
+<main class="wrap">
+
+<header class="hero" id="mulai">
+  <div>
+    <div class="eyebrow"><span>UTS Sistem Operasi</span><span>Pertemuan 1–7</span></div>
+    <h1>Sistem Operasi, <em>dijelaskan seperti kantor.</em></h1>
+    <p class="lead">Seluruh materi dari definisi OS sampai paging, ditambah simulator yang menghitung WT dan TT untukmu. Setiap bagian memuat bahasa bayi, kalimat jawaban yang aman untuk ujian, dan jebakan yang sering dipakai penguji.</p>
+    <div class="paths" aria-label="Pilih jalur sesuai sisa waktumu">
+      <a href="#satu-halaman"><b>15 menit</b><span>Satu Halaman, Pengenal Soal, lalu Jebakan.</span></a>
+      <a href="#jadwal"><b>1 jam</b><span>Tambah Penjadwalan (bobot terbesar) dan Memori. Pakai simulatornya.</span></a>
+      <a href="#b1"><b>3 jam</b><span>Baca berurutan dari Bab 1, kerjakan kuis di akhir.</span></a>
+    </div>
+  </div>
+  <div class="office" aria-label="Analogi kantor">
+    <div class="layer"><span class="tag">USER</span><div><b>Kamu</b><small>Orang yang menyuruh</small></div></div>
+    <div class="layer"><span class="tag">APP</span><div><b>Aplikasi</b><small>Chrome, VS Code, Spotify, WhatsApp</small></div></div>
+    <div class="layer os"><span class="tag">OS</span><div><b>Sistem Operasi = manajer kantor</b><small>Menentukan siapa dapat CPU, RAM, file, dan I/O. Menjaga agar tidak saling tabrak.</small></div></div>
+    <div class="layer"><span class="tag">HW</span><div><b>Hardware</b><small>CPU = pekerja · RAM = meja kerja · Storage = gudang</small></div></div>
+  </div>
+</header>
+
+<!-- ================= SATU HALAMAN ================= -->
+<section class="sec" id="satu-halaman">
+  <div class="sec-head">
+    <div class="eyebrow"><span>Baca ini dulu</span></div>
+    <h2>Satu halaman untuk seluruh UTS</h2>
+    <p class="lead">Kalau waktumu habis, baca bagian ini saja. Semua bagian di bawahnya hanyalah penjelasan dari kotak-kotak berikut.</p>
+  </div>
+
+  <div class="grid3">
+    <div class="card"><span class="kw">Sistem Operasi</span>
+      <p>Perangkat lunak sistem yang <b>mengelola resource</b> hardware dan software serta menyediakan <b>interface</b> bagi pengguna.</p>
+      <p><b>Kernel</b> = inti OS yang berhubungan langsung dengan hardware, bukan seluruh OS.</p>
+      <p>Tujuan: interaksi manusia–mesin, efisiensi resource, multitasking dan keamanan.</p></div>
+    <div class="card"><span class="kw">8 komponen OS</span>
+      <p>Process · Memory · File System · I/O · Secondary Storage · Networking · Protection &amp; Security · Command Interpreter (UI).</p></div>
+    <div class="card"><span class="kw">Sejarah</span>
+      <p><b>G1</b> Vacuum tube, belum ada OS<br><b>G2</b> Transistor, Batch<br><b>G3</b> IC, Multiprogramming, Timesharing, UNIX<br><b>G4</b> LSI, PC, Windows/Linux/Mac</p></div>
+    <div class="card"><span class="kw">Program vs Proses</span>
+      <p>Program = pasif (file di storage). Proses = program yang <b>sedang dieksekusi</b>. Proses terdiri dari Code, Data, Stack, Heap, PCB.</p></div>
+    <div class="card"><span class="kw">Status proses</span>
+      <p>NEW → READY → RUNNING → TERMINATED.<br>RUNNING → WAITING → READY.<br>RUNNING → READY (quantum habis / diserobot).</p>
+      <p><b>Ready</b> menunggu CPU. <b>Waiting</b> menunggu I/O atau event.</p></div>
+    <div class="card"><span class="kw">PCB = KTP proses</span>
+      <p>Pointer · Process State · PID · Program Counter · Registers · Memory Limits · Open Files.</p></div>
+    <div class="card"><span class="kw">3 Scheduler</span>
+      <p><b>Long-term</b>: job → ready queue (paling lambat).<br><b>Short-term</b>: ready queue → CPU (paling cepat).<br><b>Medium-term</b>: swap RAM ↔ disk.</p>
+      <p>Scheduler memilih. Dispatcher menyerahkan CPU.</p></div>
+    <div class="card"><span class="kw">Deadlock</span>
+      <p>Proses saling menunggu resource yang dipegang yang lain. 4 penanganan: Prevention, Avoidance, Detection, Recovery.</p></div>
+    <div class="card"><span class="kw">Rumus</span>
+      <p class="mono">TT = Finish − Arrival<br>WT = TT − BT<br>AWT = ΣWT / n<br>ATT = ΣTT / n</p></div>
+  </div>
+
+  <h3>Algoritma penjadwalan</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Algoritma</th><th>Memilih</th><th>Preemptive?</th><th>Kata kunci / kelemahan</th></tr></thead>
+    <tbody>
+      <tr><td><b>FCFS</b></td><td>Yang datang paling dulu</td><td>Tidak</td><td>Antre kasir. Kelemahan: <b>convoy effect</b>.</td></tr>
+      <tr><td><b>SJF</b></td><td>Burst time terkecil</td><td>Tidak</td><td>AWT terkecil. Kelemahan: proses panjang bisa starvation.</td></tr>
+      <tr><td><b>SRTF</b></td><td>Sisa waktu terkecil</td><td>Ya</td><td>SJF versi preemptive.</td></tr>
+      <tr><td><b>Round Robin</b></td><td>Bergiliran, tiap proses sebatas <b>quantum</b></td><td>Ya</td><td>Adil. Tidak memakai prioritas.</td></tr>
+      <tr><td><b>Priority</b></td><td>Prioritas tertinggi (<b>angka kecil = tinggi</b>)</td><td>Bisa dua-duanya</td><td>Kelemahan: starvation proses prioritas rendah.</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="grid3">
+    <div class="card"><span class="kw">Memori</span>
+      <p>Kecepatan: Register → Cache → RAM → Secondary.<br><b>Contiguous</b>: satu blok utuh. <b>Non-contiguous</b>: boleh dipecah (Paging, Segmentation).</p>
+      <p><b>First</b> fit: lubang pertama yang muat. <b>Best</b>: lubang terkecil yang muat. <b>Worst</b>: lubang terbesar.</p></div>
+    <div class="card"><span class="kw">Fragmentasi</span>
+      <p><b>Internal</b>: sisa di <i>dalam</i> blok yang dialokasikan (diberi 16 KB, dipakai 10 KB → 6 KB).</p>
+      <p><b>External</b>: total kosong cukup, tetapi lubangnya <i>terpisah</i>.</p></div>
+    <div class="card"><span class="kw">Paging &amp; Segmentation</span>
+      <p><b>Paging</b>: Page (logical) ↔ Frame (physical), ukuran sama. Alamat = (page, offset).</p>
+      <p><b>Segmentation</b>: potong menurut logika program, ukuran beda-beda. Segment table = Base + Limit.</p>
+      <p>Virtual → <b>MMU</b> → Physical.</p></div>
+  </div>
+
+  <div class="note baby"><b>Kalimat sebelum masuk ruang ujian</b>
+    <p class="big-line" style="margin:0">OS adalah bos komputer. Proses adalah program yang sedang berjalan. PCB adalah KTP proses. Ready menunggu CPU, Waiting menunggu I/O. Scheduler memilih, dispatcher menyerahkan CPU. Angka prioritas kecil berarti lebih penting. TT = Finish − Arrival, WT = TT − BT. Internal = di dalam blok, external = lubang di luar. Virtual address diterjemahkan MMU menjadi physical address.</p>
+  </div>
+</section>
+
+<!-- ================= PENGENAL SOAL ================= -->
+<section class="sec" id="pengenal">
+  <div class="sec-head">
+    <div class="eyebrow"><span>Refleks ujian</span></div>
+    <h2>Pengenal soal: lihat ciri, tahu rumusnya</h2>
+    <p class="lead">Penguji hampir selalu memakai pola yang sama. Cocokkan kata di soal dengan baris di bawah, lalu mulai dari langkah pertama.</p>
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th>Kalau soal menyebut…</th><th>Berarti…</th><th>Langkah pertama</th></tr></thead>
+    <tbody>
+      <tr><td>Tabel AT dan BT, "urutan kedatangan"</td><td>FCFS</td><td>Urutkan menurut AT. Tidak ada pemotongan.</td></tr>
+      <tr><td>BT berbeda, ada AT berbeda, "terpendek dulu"</td><td>SJF</td><td>Di setiap titik waktu, pilih BT terkecil <b>di antara yang sudah datang</b>.</td></tr>
+      <tr><td>"Sisa waktu", "remaining", "preemptive SJF"</td><td>SRTF</td><td>Setiap ada kedatangan baru, bandingkan sisa waktu proses yang sedang jalan.</td></tr>
+      <tr><td>"Quantum", "time slice", "bergiliran"</td><td>Round Robin</td><td>Buat antrean. Jalankan maksimal satu quantum, sisa kembali ke belakang.</td></tr>
+      <tr><td>Kolom "Priority" / "Prioritas"</td><td>Priority</td><td>Cek keterangan: angka kecil = tinggi (aturan materi dosen).</td></tr>
+      <tr><td>Hitung "waiting time" atau "turnaround"</td><td>Gantt chart</td><td>Gambar Gantt dulu, lalu isi tabel Start, Finish, WT, TT.</td></tr>
+      <tr><td>"Memprediksi burst time", α</td><td>Exponential averaging</td><td>τ<sub>n+1</sub> = α·t<sub>n</sub> + (1−α)·τ<sub>n</sub></td></tr>
+      <tr><td>Daftar lubang memori (100, 500, 200, 300)</td><td>First / Best / Worst fit</td><td>Coret lubang yang terlalu kecil, lalu pilih sesuai aturan.</td></tr>
+      <tr><td>"32 bit", "page 4 KB"</td><td>Paging</td><td>Offset = log₂(ukuran page). Page number = sisa bit.</td></tr>
+      <tr><td>"Base" dan "Limit"</td><td>Segmentation</td><td>Offset harus &lt; limit. Fisik = base + offset.</td></tr>
+      <tr><td>"16 KB diberikan, 10 KB dipakai"</td><td>Internal fragmentation</td><td>Sisa = diberikan − dipakai.</td></tr>
+      <tr><td>"Total kosong cukup tapi proses tidak muat"</td><td>External fragmentation</td><td>Lubang tidak bersebelahan.</td></tr>
+      <tr><td>P1 punya A, minta B; P2 punya B, minta A</td><td>Deadlock</td><td>Sebut siklus saling tunggu, lalu 4 cara penanganan.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ================= BAB 1 ================= -->
+<section class="sec" id="b1" data-bab="1">
+  <div class="sec-head">
+    <div class="eyebrow"><span>Pertemuan 1</span><span class="dots" data-w="5"></span></div>
+    <h2>Apa itu Sistem Operasi</h2>
+    <p class="lead">Satu kalimat definisi, tiga tujuan, delapan komponen, dan satu istilah yang sering tertukar: kernel.</p>
+  </div>
+
+  <div class="note baby"><b>Bahasa bayi</b><p>Komputer itu kantor besar. Kamu bos yang memberi perintah, OS manajernya, dan hardware adalah barang-barang kantor. Manajer inilah yang memastikan pekerja (CPU) tidak menganggur dan meja kerja (RAM) tidak diperebutkan.</p></div>
+  <div class="note write"><b>Tulis di jawaban</b><p>Sistem Operasi adalah perangkat lunak sistem yang mengelola sumber daya hardware dan software serta menyediakan antarmuka bagi pengguna untuk berinteraksi dengan komputer.</p><p>Kata kunci yang harus muncul: <b>mengelola resource</b> dan <b>menyediakan interface</b>.</p></div>
+
+  <h3>Tiga tujuan OS</h3>
+  <div class="grid3">
+    <div class="card"><span class="kw">1 · Interaksi</span><h4>Memudahkan manusia–mesin</h4><p>Kamu klik Chrome, OS yang mengurus bagaimana Chrome dimuat dan dijalankan. Kamu tidak perlu bicara langsung dengan hardware.</p></div>
+    <div class="card"><span class="kw">2 · Efisiensi</span><h4>Memakai resource sebaik mungkin</h4><p>OS memutuskan CPU dipakai siapa dulu, RAM diberikan ke siapa, file disimpan di mana.</p></div>
+    <div class="card"><span class="kw">3 · Multitasking &amp; keamanan</span><h4>Banyak program, aman</h4><p>Spotify, Chrome, VS Code, dan WhatsApp tampak berjalan bersamaan, tetapi tidak boleh saling merusak.</p></div>
+  </div>
+
+  <h3>Delapan komponen OS</h3>
+  <p>Untuk soal "sebutkan fungsi atau komponen utama OS", tulis kedelapannya.</p>
+  <div class="grid4">
+    <div class="card"><span class="kw">1</span><b>Process Management</b><br><small>mengatur proses dan CPU</small></div>
+    <div class="card"><span class="kw">2</span><b>Memory Management</b><br><small>mengatur RAM</small></div>
+    <div class="card"><span class="kw">3</span><b>File System Management</b><br><small>mengatur file dan folder</small></div>
+    <div class="card"><span class="kw">4</span><b>I/O System Management</b><br><small>mengatur perangkat masuk-keluar</small></div>
+    <div class="card"><span class="kw">5</span><b>Secondary Storage Mgmt</b><br><small>mengatur disk</small></div>
+    <div class="card"><span class="kw">6</span><b>Networking</b><br><small>komunikasi antar komputer</small></div>
+    <div class="card"><span class="kw">7</span><b>Protection &amp; Security</b><br><small>mencegah akses tidak sah</small></div>
+    <div class="card"><span class="kw">8</span><b>Command Interpreter / UI</b><br><small>shell atau GUI untuk pengguna</small></div>
+  </div>
+
+  <h3>Kernel</h3>
+  <p><b>Kernel adalah inti OS</b> yang berinteraksi langsung dengan hardware. Tugas utamanya: manajemen proses, manajemen memori, manajemen I/O, dan proteksi dasar.</p>
+  <div class="note trap"><b>Jebakan</b><p>"Kernel adalah seluruh sistem operasi." Salah. Kernel hanyalah inti. Antarmuka (shell, GUI) dan utilitas ikut dalam OS, tetapi bukan kernel.</p></div>
+
+  <div class="note mentor"><b>Tambahan mentor, di luar slide</b>
+    <p><b>Dua peran OS.</b> OS adalah <i>resource manager</i> (membagi CPU, RAM, disk secara adil dan aman) sekaligus <i>abstraksi</i> (menyembunyikan kerumitan hardware. Kamu menulis "buka file", bukan "geser kepala disk ke sektor 4821").</p>
+    <p><b>User mode vs kernel mode.</b> Aplikasi berjalan di user mode dan tidak boleh menyentuh hardware langsung. Kalau butuh (misal membaca file), ia meminta kernel lewat <i>system call</i>. Kernel berjalan di kernel mode yang punya hak penuh. Aturan ini yang membuat satu aplikasi yang error tidak menjatuhkan seluruh komputer. Di Bab 5 kamu akan menemukan bahwa dispatcher bertugas "masuk ke user mode". Itulah kaitannya.</p></div>
+</section>
+
+<!-- ================= BAB 2 ================= -->
+<section class="sec" id="b2" data-bab="2">
+  <div class="sec-head">
+    <div class="eyebrow"><span>Pertemuan 2</span><span class="dots" data-w="4"></span></div>
+    <h2>Jenis OS dan sejarahnya</h2>
+    <p class="lead">Enam jenis OS dan empat generasi. Sejarah paling mudah dihafal kalau kamu melihatnya sebagai rantai masalah dan solusi.</p>
+  </div>
+
+  <h3>Enam jenis OS</h3>
+  <div class="grid3">
+    <div class="card"><span class="kw">Batch</span><h4>Dikumpulkan lalu dikerjakan berurutan</h4><p>Pengguna tidak berinteraksi langsung. Contoh: pengolahan laporan bank.</p></div>
+    <div class="card"><span class="kw">Time-sharing</span><h4>Berbagi waktu CPU</h4><p>"Kamu 10 ms, kamu 10 ms, kamu 10 ms…" Pergantian begitu cepat sehingga semua terasa berjalan serentak.</p></div>
+    <div class="card"><span class="kw">Distributed</span><h4>Banyak komputer, tampak satu sistem</h4><p>Beberapa komputer bekerja bersama dan pengguna melihatnya sebagai satu sistem.</p></div>
+    <div class="card"><span class="kw">Network</span><h4>Mengelola resource jaringan</h4><p>File sharing, printer bersama, keamanan, akses jarak jauh.</p></div>
+    <div class="card"><span class="kw">Real-time</span><h4>Tepat waktu itu wajib</h4><p><b>Hard</b>: deadline harus dipenuhi (pesawat, alat pacu jantung). <b>Soft</b>: deadline penting, telat sedikit masih ditoleransi.</p></div>
+    <div class="card"><span class="kw">Mobile</span><h4>Untuk smartphone dan tablet</h4><p>Android, iOS.</p></div>
+  </div>
+  <div class="note mentor"><b>Tambahan mentor, di luar slide</b>
+    <p><b>Real-time bukan berarti paling cepat.</b> Ia berarti <i>dijamin tepat waktu</i>. Contoh soft real-time: streaming video (telat sedikit hanya menyentak).</p>
+    <p><b>Multiprogramming vs time-sharing.</b> Multiprogramming: beberapa program ada di memori, CPU pindah saat satu program menunggu I/O, tujuannya CPU tidak menganggur. Time-sharing: pindah <i>berdasarkan jatah waktu</i>, tujuannya respons cepat untuk banyak pengguna. Time-sharing adalah kelanjutan dari multiprogramming.</p></div>
+
+  <h3>Empat generasi sebagai rantai solusi</h3>
+  <div class="timeline">
+    <div class="tl"><div class="yr">1940–1950-an</div><div class="box"><b>Generasi 1 · Vacuum Tube</b><p>Belum ada OS. Programmer menulis bahasa mesin, mengatur kabel, dan memakai punched card. Contoh: ENIAC.</p><p><i>Masalah:</i> semuanya manual dan lambat.</p></div></div>
+    <div class="tl"><div class="yr">1955–1965</div><div class="box"><b>Generasi 2 · Transistor + Batch</b><p>Komputer lebih kecil, cepat, murah, andal. Muncul batch processing. Bahasa: FORTRAN dan Assembly.</p><p><i>Masalah:</i> CPU sering menganggur saat program menunggu I/O.</p></div></div>
+    <div class="tl"><div class="yr">1965–1980</div><div class="box"><b>Generasi 3 · IC + Multiprogramming + Timesharing + UNIX</b><p>Beberapa program dimasukkan ke memori. Saat A menunggu I/O, CPU mengerjakan B. Berkembang menjadi time-sharing: banyak pengguna berbagi CPU.</p><p><i>Masalah:</i> komputer masih mahal dan besar.</p></div></div>
+    <div class="tl"><div class="yr">1980–sekarang</div><div class="box"><b>Generasi 4 · LSI + Personal Computer</b><p>IBM PC, MS-DOS, Windows, Linux, Mac OS, dan OS mobile.</p></div></div>
+  </div>
+  <div class="note write"><b>Tulis di jawaban</b><p>Perkembangan teknologi G1 → G4: <b>Vacuum Tube → Transistor → IC → LSI/PC</b>.</p></div>
+</section>
+
+<!-- ================= BAB 3 ================= -->
+<section class="sec" id="b3" data-bab="3">
+  <div class="sec-head">
+    <div class="eyebrow"><span>Pertemuan 3</span><span class="dots" data-w="5"></span></div>
+    <h2>Konsep dasar proses</h2>
+    <p class="lead">Beda program dan proses, isi sebuah proses, stack versus heap, dan lima status proses. Bagian status hampir pasti keluar.</p>
+  </div>
+
+  <div class="grid2">
+    <div class="card"><span class="kw">Program</span><h4>Resep makanan</h4><p>Kumpulan instruksi yang <b>pasif</b>. <code>chrome.exe</code> yang tersimpan di storage belum melakukan apa-apa.</p></div>
+    <div class="card"><span class="kw">Proses</span><h4>Resep yang sedang dimasak</h4><p>Program yang <b>sedang dieksekusi</b> dan aktif. Saat kamu membuka Chrome, programnya menjadi proses.</p></div>
+  </div>
+  <div class="note mentor"><b>Tambahan mentor, di luar slide</b><p>Satu program bisa menjadi banyak proses. Membuka dua jendela program yang sama menghasilkan dua proses dengan PID berbeda, padahal filenya satu. Itu sebabnya "proses" bukan sekadar nama lain untuk "program".</p></div>
+
+  <h3>Isi sebuah proses</h3>
+  <div class="grid2">
+    <div>
+      <div class="tw"><table>
+        <thead><tr><th>Komponen</th><th>Isinya</th></tr></thead>
+        <tbody>
+          <tr><td><b>Code / Text</b></td><td>Instruksi program</td></tr>
+          <tr><td><b>Data</b></td><td>Variabel dan konstanta</td></tr>
+          <tr><td><b>Stack</b></td><td>Pemanggilan fungsi, parameter, return address, variabel lokal</td></tr>
+          <tr><td><b>Heap</b></td><td>Memori dinamis yang dialokasikan saat runtime</td></tr>
+          <tr><td><b>PCB</b></td><td>Informasi penting proses (dibahas di Bab 4)</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <div>
+      <div class="layout-proc" aria-label="Tata letak memori sebuah proses">
+        <div><span>Stack</span><small>tumbuh ke bawah ↓</small></div>
+        <div class="gap">ruang kosong</div>
+        <div><span>Heap</span><small>tumbuh ke atas ↑</small></div>
+        <div><span>Data</span><small>variabel global</small></div>
+        <div><span>Code / Text</span><small>instruksi</small></div>
+      </div>
+      <p class="mono" style="color:var(--muted);margin-top:6px;font-size:0.78rem">Gambar tata letak: tambahan mentor.</p>
+    </div>
+  </div>
+
+  <h3>Stack vs Heap</h3>
+  <div class="tw"><table>
+    <thead><tr><th></th><th>Stack</th><th>Heap</th></tr></thead>
+    <tbody>
+      <tr><td>Kecepatan</td><td>Cepat</td><td>Relatif lebih lambat</td></tr>
+      <tr><td>Pola</td><td>LIFO (terakhir masuk, pertama keluar)</td><td>Dinamis, alokasi saat runtime</td></tr>
+      <tr><td>Menyimpan</td><td>Variabel lokal, function call</td><td>Objek dan data dinamis</td></tr>
+      <tr><td>Ukuran</td><td>Lebih terbatas</td><td>Bergantung kapasitas memori</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note baby"><b>Bahasa bayi</b><p>Stack = meja kecil untuk barang yang sedang dipakai sekarang. Heap = gudang untuk barang yang ukurannya bisa berubah-ubah.</p></div>
+  <div class="note mentor"><b>Tambahan mentor, di luar slide</b><p>Fungsi rekursif tanpa kondisi berhenti terus menambah isi stack sampai penuh. Itulah <i>stack overflow</i>. Di heap, lupa melepas memori yang sudah tidak dipakai disebut <i>memory leak</i>.</p></div>
+
+  <h3>Lima status proses, bisa diklik</h3>
+  <p>Tekan tombol kejadian di bawah dan lihat proses berpindah status. Coba tekan kejadian yang tidak mungkin, misalnya "I/O selesai" saat RUNNING. Justru di situlah jebakan ujian bersembunyi.</p>
+  <div class="sm">
+    <svg viewBox="0 0 760 330" role="img" aria-label="Diagram status proses">
+      <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <path id="e-admit" class="edge" d="M140,150 L198,150" marker-end="url(#ah)"/>
+      <path id="e-dispatch" class="edge" d="M312,140 L398,140" marker-end="url(#ah)"/>
+      <path id="e-preempt" class="edge" d="M470,120 C470,40 255,40 255,120" marker-end="url(#ah)"/>
+      <path id="e-wait" class="edge" d="M450,172 L395,252" marker-end="url(#ah)"/>
+      <path id="e-ioend" class="edge" d="M330,252 L270,172" marker-end="url(#ah)"/>
+      <path id="e-exit" class="edge" d="M526,150 L592,150" marker-end="url(#ah)"/>
+      <text class="elab" x="169" y="136" text-anchor="middle">admit</text>
+      <text class="elab" x="355" y="128" text-anchor="middle">dispatch</text>
+      <text class="elab" x="362" y="58" text-anchor="middle">timeout / diserobot</text>
+      <text class="elab" x="448" y="226" text-anchor="end">minta I/O</text>
+      <text class="elab" x="278" y="226" text-anchor="end">I/O selesai</text>
+      <text class="elab" x="559" y="136" text-anchor="middle">exit</text>
+      <g class="node" id="n-NEW"><rect x="30" y="128" width="110" height="44" rx="10"/><text x="85" y="150">NEW</text></g>
+      <g class="node" id="n-READY"><rect x="200" y="120" width="112" height="44" rx="10"/><text x="256" y="142">READY</text></g>
+      <g class="node" id="n-RUNNING"><rect x="400" y="120" width="126" height="44" rx="10"/><text x="463" y="142">RUNNING</text></g>
+      <g class="node" id="n-TERMINATED"><rect x="594" y="128" width="140" height="44" rx="10"/><text x="664" y="150">TERMINATED</text></g>
+      <g class="node" id="n-WAITING"><rect x="306" y="254" width="130" height="44" rx="10"/><text x="371" y="276">WAITING</text></g>
+    </svg>
+    <div id="sm-status" class="sm-status" aria-live="polite"></div>
+    <div class="btn-row" id="sm-btns"></div>
+    <div class="btn-row" style="margin-top:6px"><button class="btn" id="sm-reset" type="button">Ulang dari NEW</button></div>
+  </div>
+  <div class="grid3" style="margin-top:12px">
+    <div class="card"><span class="kw">NEW</span><p>"Hai, aku baru lahir." Proses baru dibuat.</p></div>
+    <div class="card"><span class="kw">READY</span><p>"Aku siap, tapi belum dapat CPU." Menunggu giliran di ready queue.</p></div>
+    <div class="card"><span class="kw">RUNNING</span><p>"Sekarang aku kerja!" Sedang memakai CPU.</p></div>
+    <div class="card"><span class="kw">WAITING / BLOCKED</span><p>Menunggu sesuatu selain CPU: I/O, event, atau resource.</p></div>
+    <div class="card"><span class="kw">TERMINATED</span><p>"Pekerjaanku selesai, aku pulang."</p></div>
+    <div class="card"><span class="kw">Ready ≠ Waiting</span><p><b>Ready</b> menunggu CPU. <b>Waiting</b> menunggu I/O atau event. Ini jebakan nomor satu.</p></div>
+  </div>
+  <div class="note trap"><b>Dua hal yang sering salah</b>
+    <p>1. Tidak ada panah WAITING → RUNNING. Setelah I/O selesai, proses harus kembali antre di READY.</p>
+    <p>2. Di rangkumanmu belum ada panah RUNNING → READY. Panah itu ada karena Round Robin dan prioritas preemptive: jatah waktu habis atau ada proses lebih penting, jadi proses diserobot dan kembali ke antrean.</p></div>
+</section>
+
+<!-- ================= BAB 4 ================= -->
+<section class="sec" id="b4" data-bab="4">
+  <div class="sec-head">
+    <div class="eyebrow"><span>Pertemuan 4</span><span class="dots" data-w="5"></span></div>
+    <h2>Manajemen proses: PCB, scheduler, deadlock</h2>
+    <p class="lead">Apa yang OS lakukan terhadap proses, kartu identitas proses (PCB), tiga scheduler, dan deadlock.</p>
+  </div>
+
+  <h3>Aktivitas utama</h3>
+  <div class="grid2">
+    <div class="card"><span class="kw">Process creation</span><p>OS membuat proses baru. Sebuah proses bisa membuat <b>child process</b> dengan <code>fork</code>.</p></div>
+    <div class="card"><span class="kw">Process termination</span><p>Saat selesai atau dihentikan, OS mengakhiri dan membersihkan prosesnya.</p></div>
+    <div class="card"><span class="kw">Scheduling &amp; execution</span><p>OS menentukan siapa yang mendapat CPU.</p></div>
+    <div class="card"><span class="kw">Context switching</span><p>CPU berpindah dari satu proses ke proses lain.</p></div>
+  </div>
+
+  <h3>Context switching, langkah demi langkah</h3>
+  <div class="flow">
+    <div><b>1. Simpan</b>Keadaan P1 (register, program counter) disimpan ke PCB P1.</div><i>→</i>
+    <div><b>2. Ambil</b>Keadaan P2 dimuat dari PCB P2.</div><i>→</i>
+    <div><b>3. Jalankan</b>CPU melanjutkan P2 dari instruksi terakhirnya.</div>
+  </div>
+  <div class="note mentor"><b>Tambahan mentor, di luar slide</b><p>Context switch adalah <i>overhead murni</i>: selama CPU menyimpan dan memuat, tidak ada pekerjaan berguna. Karena itu Round Robin dengan quantum terlalu kecil malah boros: CPU lebih sibuk berpindah daripada bekerja.</p></div>
+
+  <h3>PCB: KTP-nya proses</h3>
+  <div class="grid2">
+    <div class="pcb" aria-label="Contoh kartu PCB">
+      <div class="pcb-h"><span>Process Control Block</span><span>PID 1042</span></div>
+      <dl>
+        <dt>Pointer</dt><dd>menunjuk PCB berikutnya di queue</dd>
+        <dt>State</dt><dd>READY</dd>
+        <dt>PID</dt><dd>1042 (nomor unik proses)</dd>
+        <dt>Prog. counter</dt><dd>alamat instruksi berikutnya</dd>
+        <dt>Registers</dt><dd>isi register CPU yang harus diselamatkan</dd>
+        <dt>Memory limits</dt><dd>batas memori proses</dd>
+        <dt>Open files</dt><dd>daftar file yang sedang dibuka</dd>
+      </dl>
+    </div>
+    <div>
+      <div class="note trap" style="margin-top:0"><b>PID vs Program Counter</b>
+        <p>PID menjawab "<i>siapa aku?</i>". Program Counter menjawab "<i>instruksi mana yang akan kukerjakan berikutnya?</i>". Soal sering membalik keduanya.</p></div>
+      <div class="note write"><b>Tulis di jawaban</b><p>PCB (Process Control Block) adalah struktur data yang menyimpan informasi proses: pointer, process state, PID, program counter, register, batas memori, dan daftar file terbuka.</p></div>
+    </div>
+  </div>
+
+  <h3>IPC dan sinkronisasi</h3>
+  <div class="grid2">
+    <div class="card"><span class="kw">Message passing</span><h4>Seperti chat WhatsApp</h4><p>Proses saling mengirim pesan.</p></div>
+    <div class="card"><span class="kw">Shared memory</span><h4>Seperti papan tulis bersama</h4><p>Dua proses memakai satu area memori yang sama.</p></div>
+  </div>
+  <p style="margin-top:12px"><b>Sinkronisasi</b> mencegah proses yang memakai resource bersama saling bertabrakan. Contoh: P1 dan P2 menulis ke file yang sama pada saat yang sama akan merusak data.</p>
+
+  <h3>Tiga scheduler</h3>
+  <div class="flow" aria-label="Alur scheduler">
+    <div><b>Job pool</b>Semua pekerjaan yang menunggu masuk sistem</div><i>→ long-term →</i>
+    <div><b>Ready queue</b>Proses di RAM yang siap jalan</div><i>→ short-term →</i>
+    <div><b>CPU</b>Proses yang sedang berjalan</div>
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th>Scheduler</th><th>Tugas (bahasa bayi)</th><th>Frekuensi</th></tr></thead>
+    <tbody>
+      <tr><td><b>Long-term</b></td><td>"Dari banyak pekerjaan, mana yang boleh masuk antrean?" Mengontrol <i>degree of multiprogramming</i>.</td><td>Paling jarang (lambat)</td></tr>
+      <tr><td><b>Short-term</b> (CPU scheduler)</td><td>"Dari yang sudah antre, siapa yang sekarang pakai CPU?" Memakai FCFS, SJF, Round Robin, Priority.</td><td>Paling sering (cepat)</td></tr>
+      <tr><td><b>Medium-term</b></td><td>"RAM penuh. Sebagian proses pindah dulu ke disk." Inilah <b>swapping</b>.</td><td>Menengah</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note mentor"><b>Tambahan mentor, di luar slide</b><p>Short-term scheduler harus sangat cepat karena berjalan tiap beberapa milidetik. Kalau ia lambat, waktunya habis untuk menjadwalkan, bukan untuk bekerja. Long-term scheduler idealnya mencampur proses <i>I/O-bound</i> (banyak menunggu I/O) dan <i>CPU-bound</i> (banyak menghitung) supaya CPU dan perangkat I/O sama-sama sibuk.</p></div>
+
+  <h3>Deadlock</h3>
+  <div class="note baby"><b>Bahasa bayi</b><p>Dua orang saling menunggu dan tak ada yang mau mengalah. Contoh dari slide: P1 memegang printer dan minta tape drive. P2 memegang tape drive dan minta printer. P1 menunggu P2, P2 menunggu P1, selamanya.</p></div>
+  <div class="grid4">
+    <div class="card"><span class="kw">Prevention</span><p>Jangan sampai terjadi.</p></div>
+    <div class="card"><span class="kw">Avoidance</span><p>Hindari kondisi berbahaya.</p></div>
+    <div class="card"><span class="kw">Detection</span><p>Cek apakah sudah terjadi.</p></div>
+    <div class="card"><span class="kw">Recovery</span><p>Bereskan setelah terjadi.</p></div>
+  </div>
+  <div class="note mentor"><b>Tambahan mentor, di luar slide</b>
+    <p><b>Empat syarat deadlock</b> (harus terpenuhi semuanya): <i>Mutual exclusion</i> (resource hanya bisa dipakai satu proses), <i>Hold and wait</i> (memegang satu sambil meminta yang lain), <i>No preemption</i> (resource tidak bisa dirampas paksa), <i>Circular wait</i> (ada lingkaran saling menunggu). Singkatan: <b>MHNC</b>.</p>
+    <p>Prevention bekerja dengan <b>mematahkan salah satu</b> dari empat syarat itu. Detection biasanya mencari siklus pada graf tunggu. Recovery biasanya dengan menghentikan proses atau mengambil paksa resource.</p></div>
+</section>
+<!-- ================= PENJADWALAN ================= -->
+<section class="sec" id="jadwal" data-bab="5">
+  <div class="sec-head">
+    <div class="eyebrow"><span>Pertemuan 5–6</span><span class="dots" data-w="5"></span><span>Bobot terbesar, sekitar 40%</span></div>
+    <h2>Penjadwalan CPU</h2>
+    <p class="lead">Bagian yang paling sering berbentuk hitungan. Pahami tiga hal: siapa dipilih, boleh dipotong atau tidak, dan cara mengisi tabel WT dan TT.</p>
+  </div>
+
+  <h3>Preemptive vs non-preemptive</h3>
+  <div class="grid2">
+    <div class="card"><span class="kw">Non-preemptive</span><h4>"Sudah dapat CPU, selesaikan dulu."</h4><p>Proses tidak boleh direbut. Ia berhenti hanya saat selesai atau masuk waiting. Seperti kamu makan di warung dan orang lain minta gantian: "Tunggu saya selesai."</p></div>
+    <div class="card"><span class="kw">Preemptive</span><h4>"Sudah dapat CPU, masih bisa disela."</h4><p>OS boleh merebut CPU. P1 berjalan, P2 datang dengan prioritas lebih tinggi (atau sisa waktu lebih pendek), maka P1 minggir.</p></div>
+  </div>
+  <div class="note mentor"><b>Tambahan mentor, di luar slide</b><p>Keputusan penjadwalan terjadi di empat momen: (1) proses berpindah RUNNING → WAITING, (2) RUNNING → READY, (3) WAITING → READY, (4) proses selesai. Sistem <b>non-preemptive</b> hanya menjadwalkan di momen 1 dan 4. Sistem <b>preemptive</b> juga di momen 2 dan 3. Ini menjelaskan mengapa panah RUNNING → READY hanya ada pada algoritma preemptive.</p></div>
+
+  <h3>Scheduler vs Dispatcher</h3>
+  <div class="grid2">
+    <div class="card"><span class="kw">Scheduler</span><h4>Memilih</h4><p>"P2 yang jalan."</p></div>
+    <div class="card"><span class="kw">Dispatcher</span><h4>Menyerahkan CPU</h4><p>"Oke P2, CPU buat kamu." Tugasnya: context switching, masuk user mode, melompat ke lokasi program yang benar. Waktu yang dibutuhkan = <b>dispatch latency</b>.</p></div>
+  </div>
+
+  <h3>Enam kriteria penjadwalan</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Kriteria</th><th>Artinya</th><th>Idealnya</th></tr></thead>
+    <tbody>
+      <tr><td><b>CPU Utilization</b></td><td>Seberapa sibuk CPU</td><td>Makin tinggi makin bagus</td></tr>
+      <tr><td><b>Throughput</b></td><td>Jumlah proses selesai per satuan waktu</td><td>Makin banyak makin bagus</td></tr>
+      <tr><td><b>Turnaround Time</b></td><td>Dari proses datang sampai selesai</td><td>Makin kecil makin bagus</td></tr>
+      <tr><td><b>Waiting Time</b></td><td>Total waktu menunggu <b>di ready queue</b></td><td>Makin kecil makin bagus</td></tr>
+      <tr><td><b>Response Time</b></td><td>Dari datang sampai pertama kali mendapat CPU</td><td>Makin kecil makin bagus</td></tr>
+      <tr><td><b>Fairness</b></td><td>Seberapa adil CPU dibagi</td><td>Merata</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Rumus yang wajib hafal</h3>
+  <div class="formula"><b>TT</b> = Finish − Arrival</div>
+  <div class="formula"><b>WT</b> = TT − BT = Finish − Arrival − Burst &nbsp; (aman untuk semua algoritma)</div>
+  <div class="formula"><b>WT</b> = Start − Arrival &nbsp; (hanya jika proses tidak pernah dipotong)</div>
+  <div class="formula"><b>AWT</b> = ΣWT / n &nbsp;&nbsp; <b>ATT</b> = ΣTT / n &nbsp;&nbsp; <b>RT</b> = Start pertama − Arrival</div>
+  <div class="note trap"><b>Jebakan</b><p>Memakai <code>WT = Start − Arrival</code> pada SRTF atau Round Robin. Proses yang dipotong mulai dari Start, tetapi masih menunggu lagi setelahnya. Untuk jenis preemptive, selalu pakai <code>WT = TT − BT</code>.</p></div>
+
+  <h3>Contoh paling gampang</h3>
+  <div class="demo" data-demo="mini" data-procs="P1:0:5,P2:2:3" data-algo="fcfs" data-title="P1 (AT 0, BT 5) dan P2 (AT 2, BT 3), FCFS"></div>
+  <p>P2 datang di detik 2 tetapi baru dapat CPU di detik 5, jadi menunggu 3. Cek: TT = 8 − 2 = 6, WT = 6 − 3 = 3.</p>
+
+  <h3>Lima algoritma, masing-masing dengan contoh yang dihitung</h3>
+
+  <h4 style="margin-top:1.4rem">FCFS dan convoy effect</h4>
+  <p>Yang datang dulu dilayani dulu. Murah dan sederhana, tetapi satu proses panjang di depan membuat semua yang pendek menunggu lama.</p>
+  <div class="demo" data-demo="a" data-procs="P1:0:24,P2:0:3,P3:0:3" data-algo="fcfs" data-title="FCFS, urutan P1 → P2 → P3"></div>
+  <p>Jika urutannya dibalik jadi yang pendek dulu (itulah SJF), hasilnya jauh lebih baik:</p>
+  <div class="demo" data-demo="b" data-procs="P1:0:24,P2:0:3,P3:0:3" data-algo="sjf" data-title="Data yang sama dengan SJF"></div>
+  <div class="note baby"><b>Bahasa bayi</b><p>Kamu antre di kasir membawa satu barang, tetapi orang di depanmu membawa satu troli penuh. Itulah convoy effect.</p></div>
+
+  <h4 style="margin-top:1.4rem">SJF non-preemptive dengan arrival time berbeda</h4>
+  <p>Jangan mengurutkan semua proses berdasarkan BT. Di setiap saat, pilih BT terkecil <b>di antara proses yang sudah datang</b>.</p>
+  <div class="demo" data-demo="c" data-procs="P1:0:6,P2:5:8,P3:7:7,P4:2:3" data-algo="sjf" data-title="Contoh slide: urutan P1 → P4 → P3 → P2"></div>
+  <div class="note mentor"><b>Tambahan mentor, di luar slide</b><p>SJF terbukti memberi <b>AWT minimum</b> untuk sekumpulan proses yang burst-nya diketahui. Kelemahannya dua: burst time sebenarnya tidak diketahui di muka (hanya bisa diprediksi, lihat exponential averaging di bawah), dan proses panjang bisa terus tersingkir (<i>starvation</i>).</p></div>
+
+  <h4 style="margin-top:1.4rem">SRTF: SJF versi preemptive</h4>
+  <p>Setiap kali ada proses baru datang, bandingkan sisa waktu proses yang sedang berjalan dengan BT proses baru itu. Pilih yang terkecil.</p>
+  <div class="demo" data-demo="d" data-procs="P1:0:8,P2:1:4,P3:2:9,P4:3:5" data-algo="srtf" data-title="Contoh slide: WT P1=9, P2=0, P3=15, P4=2"></div>
+  <p>Perhatikan P1: di detik 1 sisanya 7, sedangkan P2 yang baru datang hanya butuh 4. P1 minggir. P1 baru lanjut di detik 10 setelah P2 dan P4 selesai.</p>
+
+  <h4 style="margin-top:1.4rem">Round Robin dan quantum</h4>
+  <p>Tiap proses memakai CPU maksimal satu quantum. Kalau belum selesai, ia pindah ke <b>belakang antrean</b>.</p>
+  <div class="demo" data-demo="e" data-procs="P1:0:10,P2:0:4,P3:0:3" data-algo="rr" data-q="4" data-title="Contoh slide: quantum 4"></div>
+  <div class="note mentor"><b>Tambahan mentor, di luar slide</b>
+    <p><b>Memilih quantum.</b> Quantum sangat besar membuat RR berperilaku seperti FCFS. Quantum sangat kecil membuat respons cepat, tetapi context switch terlalu sering sehingga CPU sibuk berpindah. Dengan n proses dan quantum q, tidak ada proses yang menunggu giliran lebih dari <span class="mono">(n − 1) × q</span>.</p>
+    <p><b>Kebiasaan soal.</b> Jika ada proses yang datang tepat saat quantum proses lain habis, kebanyakan buku menaruh proses baru <i>lebih dulu</i> di antrean sebelum proses yang baru dipotong. Jika soal atau dosenmu memakai urutan lain, ikuti dosen.</p></div>
+
+  <h4 style="margin-top:1.4rem">Priority</h4>
+  <p>Setiap proses punya angka prioritas. Menurut materi dosen, <b>angka lebih kecil = prioritas lebih tinggi</b>.</p>
+  <div class="demo" data-demo="f" data-procs="P1:0:5:3,P2:0:3:1,P3:0:2:4,P4:0:4:2" data-algo="prio-np" data-title="Priority non-preemptive: urutan P2 → P4 → P1 → P3"></div>
+  <p>Versi preemptive: proses baru berprioritas lebih tinggi langsung memotong proses yang berjalan.</p>
+  <div class="demo" data-demo="g" data-procs="P1:0:5:2,P2:2:3:1" data-algo="prio-p" data-title="Priority preemptive: P2 (prioritas 1) memotong P1 di detik 2"></div>
+  <div class="note mentor"><b>Tambahan mentor, di luar slide</b><p>Priority bisa menyebabkan <i>starvation</i>: proses berprioritas rendah tidak pernah kebagian CPU. Obatnya <i>aging</i>, yaitu menaikkan prioritas proses yang terlalu lama menunggu.</p></div>
+
+  <h3>Cara mengerjakan soal scheduling</h3>
+  <div class="flow">
+    <div><b>1. Tentukan algoritma</b>Pakai tabel Pengenal Soal.</div><i>→</i>
+    <div><b>2. Gambar Gantt chart</b>Tandai juga CPU yang menganggur.</div><i>→</i>
+    <div><b>3. Catat Start dan Finish</b>Start pertama dan Finish terakhir.</div><i>→</i>
+    <div><b>4. Hitung TT dan WT</b>TT = Finish − AT, WT = TT − BT.</div><i>→</i>
+    <div><b>5. Rata-ratakan</b>AWT dan ATT.</div>
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th>P</th><th>AT</th><th>BT</th><th>Start</th><th>Finish</th><th>WT</th><th>TT</th></tr></thead>
+    <tbody><tr><td>P1</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>P2</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>P3</td><td></td><td></td><td></td><td></td><td></td><td></td></tr></tbody>
+  </table></div>
+  <div class="note trap"><b>Tiga kesalahan klasik</b>
+    <p>1. Mengurutkan semua proses berdasarkan BT padahal AT berbeda. Lihat hanya yang sudah datang.</p>
+    <p>2. Lupa CPU bisa menganggur. Jika di waktu t belum ada proses yang datang, waktu langsung melompat ke kedatangan berikutnya.</p>
+    <p>3. Saat BT atau sisa waktu sama, pilih yang datang lebih dulu.</p></div>
+
+  <h3>Simulator penjadwalan</h3>
+  <p>Ubah angka di tabel, ganti algoritma, dan cocokkan dengan hitungan tanganmu. Isinya contoh dari slide. Untuk Priority, kolom Pr dipakai (angka kecil = tinggi).</p>
+  <div class="demo" id="sim">
+    <div class="btn-row" id="sim-presets" aria-label="Contoh siap pakai"></div>
+    <div class="ctl">
+      <label>Algoritma<select id="sim-algo"></select></label>
+      <label id="sim-q-wrap">Quantum<input type="number" id="sim-q" value="4" min="1" max="20"></label>
+      <button class="btn" id="sim-add" type="button">+ Proses</button>
+      <button class="btn" id="sim-del" type="button">− Proses</button>
+    </div>
+    <div class="tw in-table"><table>
+      <thead><tr><th>Proses</th><th>AT</th><th>BT</th><th>Pr</th></tr></thead>
+      <tbody id="sim-rows"></tbody>
+    </table></div>
+    <div class="msg" id="sim-msg" role="status"></div>
+    <div class="sim-out" id="sim-out"></div>
+  </div>
+
+  <h3>Exponential averaging: memprediksi burst time</h3>
+  <p>SJF perlu tahu burst berikutnya, padahal itu belum diketahui. Solusinya menebak dari riwayat:</p>
+  <div class="formula"><b>τ<sub>n+1</sub></b> = α · t<sub>n</sub> + (1 − α) · τ<sub>n</sub></div>
+  <p><span class="mono">t<sub>n</sub></span> = burst sebenarnya yang baru terjadi, <span class="mono">τ<sub>n</sub></span> = prediksi sebelumnya, <span class="mono">α</span> = faktor penghalus (0 sampai 1, umumnya 0,5). Bahasa bayi: prediksi baru = sebagian data baru + sebagian prediksi lama.</p>
+  <div class="demo" id="ea">
+    <div class="ctl">
+      <label>τ awal<input type="number" id="ea-tau0" value="10" step="any"></label>
+      <label>α<input type="number" id="ea-alpha" value="0.5" min="0" max="1" step="0.1"></label>
+      <label>Burst sebenarnya (pisahkan koma)<input type="text" id="ea-bursts" value="6, 4, 6, 4, 13, 13, 13"></label>
+    </div>
+    <div class="msg" id="ea-msg"></div>
+    <div id="ea-out"></div>
+    <p style="color:var(--muted);font-size:0.9rem;margin-top:6px">Kasus tepi: α = 0 berarti hanya percaya prediksi lama (riwayat). α = 1 berarti hanya percaya burst terakhir.</p>
+  </div>
+</section>
+
+<!-- ================= MEMORI ================= -->
+<section class="sec" id="memori" data-bab="7">
+  <div class="sec-head">
+    <div class="eyebrow"><span>Pertemuan 7</span><span class="dots" data-w="5"></span><span>Sekitar 25%</span></div>
+    <h2>Pengelolaan memori</h2>
+    <p class="lead">Dari hierarki memori sampai paging. Tiga kalkulator di bawah membantumu memastikan hitungan fit, bit paging, dan segmentasi.</p>
+  </div>
+
+  <h3>Fungsi manajemen memori dan hierarkinya</h3>
+  <p>Lima fungsi: <b>Allocate</b> (beri tempat), <b>Deallocate</b> (ambil kembali), <b>Track</b> (catat), <b>Maximize utilization</b> (jangan mubazir), <b>Protection</b> (jangan boleh masuk kamar orang).</p>
+  <div class="pyramid" aria-label="Hierarki memori, dari tercepat ke terbesar">
+    <div><b>Register</b><small>Paling cepat dan paling kecil, di dalam CPU. Tempat CPU "berpikir" sekarang.</small></div>
+    <div><b>Cache</b><small>Antara CPU dan RAM. Data yang sering dipakai ditaruh dekat CPU.</small></div>
+    <div><b>RAM</b><small>Memori utama untuk program yang sedang berjalan. <i>Volatile</i>: data hilang saat listrik mati.</small></div>
+    <div><b>Secondary</b><small>HDD, SSD, flash drive. Kapasitas besar, data tetap ada saat mati.</small></div>
+  </div>
+  <p style="margin-top:10px"><b>ROM</b> (Read Only Memory) menyimpan firmware atau instruksi dasar. Urutan kecepatan: <span class="mono">Register → Cache → RAM → Secondary</span>. Makin ke kanan makin lambat tetapi makin besar.</p>
+
+  <h3>Contiguous vs non-contiguous</h3>
+  <div class="grid2">
+    <div class="card"><span class="kw">Contiguous</span><h4>Satu blok utuh</h4><p>Proses 10 MB harus mendapat satu ruang 10 MB yang bersebelahan. Dua ruang 5 MB yang terpisah tidak boleh.</p>
+      <p><b>Fixed partition</b>: memori dibagi partisi ukuran tetap (misal 4 × 100 MB). Proses 40 MB di partisi 100 MB membuang 60 MB → <b>internal fragmentation</b>.</p>
+      <p><b>Dynamic partition</b>: partisi mengikuti kebutuhan. Saat proses selesai, ruangnya menjadi <i>hole</i>.</p></div>
+    <div class="card"><span class="kw">Non-contiguous</span><h4>Proses boleh dipecah</h4><p>Proses 10 MB bisa dipecah jadi lima potongan 2 MB di tempat berbeda. Dua teknik: <b>Paging</b> dan <b>Segmentation</b>.</p></div>
+  </div>
+
+  <h3>First, Best, Worst fit</h3>
+  <div class="grid3">
+    <div class="card"><span class="kw">First fit</span><p>Ambil lubang <b>pertama</b> yang cukup.</p></div>
+    <div class="card"><span class="kw">Best fit</span><p>Ambil lubang <b>terkecil</b> yang masih muat.</p></div>
+    <div class="card"><span class="kw">Worst fit</span><p>Ambil lubang <b>terbesar</b>.</p></div>
+  </div>
+  <p style="margin-top:10px">Lubang 100, 500, 200, 300 dan proses 180 → First = 500, Best = 200, Worst = 500. Coba sendiri dan variasikan:</p>
+  <div class="demo" id="fit">
+    <div class="ctl">
+      <label>Lubang (KB/MB, pisahkan koma)<input type="text" id="fit-holes" value="100, 500, 200, 300"></label>
+      <label>Permintaan proses (urut)<input type="text" id="fit-reqs" value="180"></label>
+    </div>
+    <div class="btn-row" id="fit-presets"></div>
+    <div class="msg" id="fit-msg"></div>
+    <div id="fit-out"></div>
+  </div>
+  <div class="note mentor"><b>Tambahan mentor, di luar slide</b><p>Hasil simulasi di banyak buku: first fit dan best fit sama-sama lebih baik dari worst fit dalam kecepatan dan pemanfaatan memori. First fit biasanya paling cepat karena berhenti di lubang pertama yang cocok. Best fit meninggalkan sisa lubang sangat kecil yang tak berguna. Coba permintaan <span class="mono">212, 417, 112, 426</span> dengan lubang <span class="mono">100, 500, 200, 300, 600</span> dan lihat siapa yang gagal memuat proses terakhir.</p></div>
+
+  <h3>Fragmentasi: dua jenis yang paling sering tertukar</h3>
+  <div class="grid2">
+    <div class="card"><span class="kw">Internal</span><h4>Pemborosan di dalam blok</h4><p>Diberi 16 KB, dipakai 10 KB, sisa <b>6 KB</b> terbuang di dalam blok itu.</p>
+      <div class="membar" style="margin-top:8px"><div class="hole" style="--w:10"><i class="used" style="--u:100%"></i><span>dipakai 10 KB</span></div><div class="hole" style="--w:6"><span>sisa 6</span></div></div></div>
+    <div class="card"><span class="kw">External</span><h4>Lubang-lubang terpisah</h4><p>Total kosong 2 + 3 + 4 = 9 MB, tetapi proses 8 MB tidak muat karena tidak ada <i>satu</i> lubang 8 MB.</p>
+      <div class="membar" style="margin-top:8px"><div class="hole" style="--w:3"><i class="used" style="--u:100%"></i><span>P1</span></div><div class="hole" style="--w:2"><span>2</span></div><div class="hole" style="--w:3"><i class="used" style="--u:100%"></i><span>P2</span></div><div class="hole" style="--w:3"><span>3</span></div><div class="hole" style="--w:3"><i class="used" style="--u:100%"></i><span>P3</span></div><div class="hole" style="--w:4"><span>4</span></div></div></div>
+  </div>
+  <div class="note mentor"><b>Tambahan mentor, di luar slide</b><p>Obat external fragmentation pada partisi dinamis adalah <i>compaction</i> (menggeser proses agar lubang menyatu), atau memakai paging. Paging menghapus external fragmentation, tetapi tetap bisa punya internal fragmentation pada page terakhir sebuah proses. Contoh: proses 72.766 byte, page 2.048 byte → 35 page penuh + 1.086 byte → butuh 36 frame, sisa di page terakhir 2.048 − 1.086 = <b>962 byte</b>.</p></div>
+
+  <h3>Alamat virtual, alamat fisik, dan MMU</h3>
+  <div class="flow">
+    <div><b>Alamat virtual / logical</b>Alamat dari sudut pandang proses. Bukan lokasi RAM yang sebenarnya.</div><i>→ MMU →</i>
+    <div><b>Alamat fisik</b>Lokasi nyata di RAM.</div>
+  </div>
+  <p><b>MMU</b> (Memory Management Unit) adalah hardware yang menerjemahkan alamat virtual menjadi alamat fisik. Bahasa bayi: program bilang "aku mau alamat X", MMU menjawab "alamat X ternyata ada di RAM bagian Y".</p>
+
+  <h3>Paging</h3>
+  <div class="grid2">
+    <div>
+      <p>Memori fisik dibagi menjadi <b>frame</b>, memori logis dibagi menjadi <b>page</b>, keduanya berukuran sama. <b>Page table</b> mencatat page mana ada di frame mana.</p>
+      <div class="formula">Logical = <b>(Page number, Offset)</b></div>
+      <div class="formula">Physical = <b>(Frame number, Offset)</b> = Frame × ukuran + Offset</div>
+      <p>Contoh slide: page 4 KB = 2<sup>12</sup>, alamat 32 bit → <b>offset 12 bit</b>, <b>page number 32 − 12 = 20 bit</b>.</p>
+    </div>
+    <div>
+      <div class="tw"><table>
+        <thead><tr><th>Kelebihan</th><th>Kekurangan</th></tr></thead>
+        <tbody>
+          <tr><td>Tidak ada external fragmentation</td><td>Masih bisa ada internal fragmentation</td></tr>
+          <tr><td>Proses tidak harus kontigu</td><td>Butuh page table</td></tr>
+          <tr><td></td><td>Translasi alamat menambah waktu</td></tr>
+        </tbody>
+      </table></div>
+      <p><b>TLB</b> (Translation Lookaside Buffer) = cache kecil yang mengingat translasi page → frame supaya tidak selalu membuka page table.</p>
+    </div>
+  </div>
+  <div class="demo" id="pg">
+    <div class="demo-title"><b>Kalkulator paging</b><span>Isi tabel page dengan nomor frame, urut dari page 0</span></div>
+    <div class="ctl">
+      <label>Lebar alamat<select id="pg-bits"><option value="16">16 bit</option><option value="20">20 bit</option><option value="24">24 bit</option><option value="32" selected>32 bit</option></select></label>
+      <label>Ukuran page<select id="pg-size"><option value="512">512 B</option><option value="1024">1 KB</option><option value="2048">2 KB</option><option value="4096" selected>4 KB</option><option value="8192">8 KB</option></select></label>
+      <label>Alamat logis (desimal)<input type="number" id="pg-addr" value="10000" min="0"></label>
+      <label>Page table (frame untuk page 0, 1, 2, …)<input type="text" id="pg-table" value="3, 1, 7"></label>
+    </div>
+    <div class="msg" id="pg-msg"></div>
+    <div id="pg-out"></div>
+  </div>
+  <div class="note mentor"><b>Tambahan mentor, di luar slide</b><p>Dengan TLB, waktu akses efektif (EAT) = <span class="mono">h·(t<sub>tlb</sub> + t<sub>mem</sub>) + (1−h)·(t<sub>tlb</sub> + 2·t<sub>mem</sub>)</span>, dengan h = hit ratio. Saat TLB miss, ada satu akses tambahan ke page table di memori. Jika soal tidak membahas ini, abaikan.</p></div>
+
+  <h3>Segmentation</h3>
+  <p>Paging memotong rata menurut ukuran tetap. Segmentation memotong menurut <b>bagian logis program</b> (code, data, stack, heap) dan ukurannya berbeda-beda. Alamat logis = <b>(Segment number, Offset)</b>. Segment table menyimpan <b>Base</b> (alamat mulai, "alamat rumah") dan <b>Limit</b> (panjang, "ukuran rumah"). Offset harus lebih kecil dari limit.</p>
+  <div class="demo" id="sg">
+    <div class="demo-title"><b>Kalkulator segmentasi</b><span>Tabel contoh klasik, boleh diubah</span></div>
+    <div class="tw in-table"><table>
+      <thead><tr><th>Segmen</th><th>Base</th><th>Limit</th></tr></thead>
+      <tbody id="sg-rows"></tbody>
+    </table></div>
+    <div class="ctl">
+      <label>Segmen<input type="number" id="sg-s" value="2" min="0" max="3"></label>
+      <label>Offset<input type="number" id="sg-d" value="53" min="0"></label>
+    </div>
+    <div id="sg-out" class="sim-out"></div>
+  </div>
+  <h4 style="margin-top:1rem">Paging vs Segmentation</h4>
+  <div class="tw"><table>
+    <thead><tr><th></th><th>Paging</th><th>Segmentation</th></tr></thead>
+    <tbody>
+      <tr><td>Dibagi menurut</td><td>Ukuran tetap</td><td>Logika program</td></tr>
+      <tr><td>Unit</td><td>Page (logical), Frame (physical)</td><td>Segment</td></tr>
+      <tr><td>Ukuran</td><td>Sama</td><td>Bisa berbeda</td></tr>
+      <tr><td>Tabel</td><td>Page table: page → frame</td><td>Segment table: base + limit</td></tr>
+      <tr><td>Alamat logis</td><td>(page, offset)</td><td>(segment, offset)</td></tr>
+      <tr><td>Fragmentasi</td><td>Tidak ada external, bisa internal</td><td>Bisa external, karena ukuran bervariasi (tambahan mentor)</td></tr>
+    </tbody>
+  </table></div>
+  <p>Hafalan: <b>Paging = potong rata-rata. Segmentation = potong menurut bagian program.</b></p>
+
+  <h3>Swapping dan virtual memory</h3>
+  <div class="grid2">
+    <div class="card"><span class="kw">Swapping</span><p>RAM sesak, proses dipindahkan sementara ke disk (RAM → DISK). Saat dibutuhkan kembali (DISK → RAM). Dikerjakan medium-term scheduler.</p></div>
+    <div class="card"><span class="kw">Virtual memory</span><p>"RAM-ku tidak cukup? Aku pinjam ruang dari storage." Proses yang tidak sepenuhnya muat di RAM tetap bisa berjalan.</p></div>
+  </div>
+  <div class="note mentor"><b>Tambahan mentor, di luar slide</b><p>Swapping memindahkan <i>seluruh proses</i>. Virtual memory modern berbasis paging memindahkan <i>per page</i> saja, hanya saat dibutuhkan (<i>demand paging</i>). Ketika page yang dicari tidak ada di RAM terjadi <i>page fault</i>, dan OS memuatnya dari disk. Terlalu banyak page fault membuat sistem lebih sibuk memindahkan page daripada bekerja, disebut <i>thrashing</i>.</p></div>
+</section>
+
+<!-- ================= JEBAKAN ================= -->
+<section class="sec" id="jebakan">
+  <div class="sec-head">
+    <div class="eyebrow"><span>Latihan pemeriksa</span></div>
+    <h2>Sepuluh jebakan UTS</h2>
+    <p class="lead">Setiap baris adalah pernyataan yang terdengar benar. Tentukan dulu benar atau salah, lalu buka untuk memeriksa.</p>
+  </div>
+  <details class="fold tr"><summary>"Ready = proses menunggu I/O."</summary><div><b>Salah.</b> Ready menunggu <b>CPU</b>. Waiting yang menunggu I/O atau event.</div></details>
+  <details class="fold tr"><summary>"SJF selalu preemptive."</summary><div><b>Salah.</b> SJF biasa non-preemptive. Versi preemptive-nya bernama <b>SRTF</b>.</div></details>
+  <details class="fold tr"><summary>"FCFS bisa memotong proses yang sedang berjalan."</summary><div><b>Salah.</b> FCFS non-preemptive: yang sudah jalan dibiarkan selesai.</div></details>
+  <details class="fold tr"><summary>"Pada Priority, angka terbesar berarti prioritas tertinggi."</summary><div><b>Salah menurut materi dosen.</b> Angka terkecil = prioritas tertinggi. Tetap baca keterangan di soal.</div></details>
+  <details class="fold tr"><summary>"Round Robin memakai prioritas."</summary><div><b>Salah.</b> Round Robin memakai <b>quantum time</b>.</div></details>
+  <details class="fold tr"><summary>"Scheduler dan dispatcher itu sama."</summary><div><b>Salah.</b> Scheduler <b>memilih</b> proses. Dispatcher <b>menyerahkan CPU</b> ke proses terpilih (context switch, user mode, lompat ke program).</div></details>
+  <details class="fold tr"><summary>"PID menunjukkan instruksi berikutnya yang akan dijalankan."</summary><div><b>Salah.</b> PID = identitas proses. Instruksi berikutnya ditunjuk <b>Program Counter</b>.</div></details>
+  <details class="fold tr"><summary>"Page adalah bagian dari memori fisik."</summary><div><b>Salah.</b> Page milik memori <b>logis</b>. Memori fisik dibagi menjadi <b>frame</b>.</div></details>
+  <details class="fold tr"><summary>"Paging tidak punya fragmentasi sama sekali."</summary><div><b>Salah.</b> Paging tidak punya external fragmentation, tetapi masih bisa punya <b>internal</b> fragmentation (sisa di page terakhir).</div></details>
+  <details class="fold tr"><summary>"Alamat virtual adalah lokasi sebenarnya di RAM."</summary><div><b>Salah.</b> Itu alamat fisik. Alamat virtual adalah sudut pandang proses, diterjemahkan <b>MMU</b> menjadi alamat fisik.</div></details>
+</section>
+
+<!-- ================= KUIS ================= -->
+<section class="sec" id="kuis">
+  <div class="sec-head">
+    <div class="eyebrow"><span>Uji diri</span></div>
+    <h2>Kuis kilat</h2>
+    <p class="lead">Enam belas soal pilihan ganda, termasuk hitungan. Jawab, lalu baca penjelasannya. Soal yang salah menunjukkan bagian mana yang perlu dibaca ulang.</p>
+  </div>
+  <div class="score" id="q-score" aria-live="polite"></div>
+  <div class="btn-row" id="q-filter" style="margin-bottom:12px"></div>
+  <div id="quiz"></div>
+  <div class="btn-row" style="margin-top:6px"><button class="btn" id="q-reset" type="button">Ulangi semua</button></div>
+
+  <h3>Dua puluh pertanyaan wajib, tutup catatan lalu jawab</h3>
+  <p>Jawab dalam hati, baru buka jawabannya.</p>
+  <details class="fold"><summary>1. Apa itu Sistem Operasi?</summary><div>Perangkat lunak sistem yang mengelola resource hardware dan software serta menyediakan antarmuka bagi pengguna.</div></details>
+  <details class="fold"><summary>2. Apa beda program dan proses?</summary><div>Program = kumpulan instruksi pasif yang tersimpan. Proses = program yang sedang dieksekusi.</div></details>
+  <details class="fold"><summary>3. Apa itu kernel?</summary><div>Inti OS yang berinteraksi langsung dengan hardware (proses, memori, I/O, proteksi dasar). Bukan seluruh OS.</div></details>
+  <details class="fold"><summary>4. Sebutkan 5 status proses.</summary><div>New, Ready, Running, Waiting (Blocked), Terminated.</div></details>
+  <details class="fold"><summary>5. Apa beda Ready dan Waiting?</summary><div>Ready menunggu CPU. Waiting menunggu I/O, event, atau resource.</div></details>
+  <details class="fold"><summary>6. Apa itu PCB?</summary><div>Process Control Block, "KTP" proses: struktur data berisi informasi proses.</div></details>
+  <details class="fold"><summary>7. Sebutkan isi PCB.</summary><div>Pointer, process state, PID, program counter, registers, memory limits, list of open files.</div></details>
+  <details class="fold"><summary>8. Apa itu context switching?</summary><div>CPU menyimpan keadaan proses lama ke PCB-nya, lalu memuat keadaan proses baru dan menjalankannya.</div></details>
+  <details class="fold"><summary>9. Apa itu deadlock?</summary><div>Dua atau lebih proses saling menunggu resource yang dipegang yang lain, sehingga tidak ada yang bisa lanjut. Penanganan: prevention, avoidance, detection, recovery.</div></details>
+  <details class="fold"><summary>10. Apa beda long-term, short-term, dan medium-term scheduler?</summary><div>Long-term: job → ready queue (paling lambat, mengontrol degree of multiprogramming). Short-term: ready queue → CPU (paling cepat). Medium-term: swapping RAM ↔ disk.</div></details>
+  <details class="fold"><summary>11. Apa beda preemptive dan non-preemptive?</summary><div>Preemptive: CPU boleh direbut dari proses yang berjalan. Non-preemptive: proses yang sudah dapat CPU berjalan sampai selesai atau waiting.</div></details>
+  <details class="fold"><summary>12. Apa itu FCFS?</summary><div>First Come First Served: yang datang dulu dilayani dulu. Non-preemptive. Kelemahan: convoy effect.</div></details>
+  <details class="fold"><summary>13. Apa itu SJF?</summary><div>Shortest Job First: burst time terkecil dulu. Non-preemptive. Menghasilkan AWT minimum.</div></details>
+  <details class="fold"><summary>14. Apa itu SRTF?</summary><div>Shortest Remaining Time First, yaitu SJF versi preemptive: yang sisa waktunya paling kecil berjalan.</div></details>
+  <details class="fold"><summary>15. Apa fungsi quantum pada Round Robin?</summary><div>Batas waktu maksimal sekali giliran. Jika belum selesai, proses kembali ke belakang antrean.</div></details>
+  <details class="fold"><summary>16. Pada Priority, angka 1 dan 5, mana yang lebih tinggi?</summary><div>Angka 1 (angka lebih kecil = prioritas lebih tinggi, menurut materi).</div></details>
+  <details class="fold"><summary>17. Apa rumus Turnaround Time?</summary><div>TT = Finish − Arrival.</div></details>
+  <details class="fold"><summary>18. Apa beda internal dan external fragmentation?</summary><div>Internal: sisa di dalam blok yang dialokasikan. External: lubang-lubang kosong terpisah di antara blok, total cukup tetapi tidak kontigu.</div></details>
+  <details class="fold"><summary>19. Apa beda paging dan segmentation?</summary><div>Paging: ukuran tetap (page ↔ frame), alamat (page, offset). Segmentation: menurut logika program, ukuran bervariasi, segment table berisi base dan limit.</div></details>
+  <details class="fold"><summary>20. Apa fungsi MMU?</summary><div>Hardware yang menerjemahkan alamat virtual/logical menjadi alamat fisik.</div></details>
+</section>
+
+<footer>
+  <p><b>Catatan jujur dari mentor.</b> Kotak bertanda "Tambahan mentor" dan beberapa penjelasan sebab-akibat berasal dari buku teks umum, bukan dari slide dosenmu. Jika definisi atau konvensi dosenmu berbeda (misalnya urutan antrean Round Robin atau arah angka prioritas), ikuti dosenmu.</p>
+  <p>Tarik napas. Kamu tidak perlu mengingat semuanya. Kamu cukup mengenali polanya.</p>
+</footer>
+
+</main>
+<script>
+/* ===== LOGIKA MURNI (diuji terpisah) ===== */
+const ALGO_NAMES = {
+  'fcfs': 'FCFS',
+  'sjf': 'SJF (non-preemptive)',
+  'srtf': 'SRTF (SJF preemptive)',
+  'rr': 'Round Robin',
+  'prio-np': 'Priority (non-preemptive)',
+  'prio-p': 'Priority (preemptive)'
+};
+
+function fmt(n) {
+  return String(Number(n.toFixed(2)));
+}
+
+/* procs: [{id, at, bt, pr}]  algo: kunci ALGO_NAMES  q: quantum (RR) */
+function simulate(procs, algo, q) {
+  const P = procs.map((p, i) => ({ i, id: p.id, at: p.at, bt: p.bt, pr: p.pr, rem: p.bt, start: null, finish: null }));
+  const n = P.length;
+  const timeline = [];
+  const log = [];
+  const rrSlices = [];
+  let t = 0, done = 0, guard = 0, cur = -1;
+  const quantum = Math.max(1, q | 0);
+
+  if (algo === 'rr') {
+    const queue = [];
+    const added = new Set();
+    const addArrivals = () => {
+      P.filter(p => p.at <= t && !added.has(p.i))
+        .sort((a, b) => a.at - b.at || a.i - b.i)
+        .forEach(p => { queue.push(p); added.add(p.i); });
+    };
+    while (done < n && guard++ < 100000) {
+      addArrivals();
+      if (!queue.length) {
+        timeline.push(null);
+        const lastS = rrSlices[rrSlices.length - 1];
+        if (lastS && lastS.i === null) lastS.end = t + 1; else rrSlices.push({ i: null, id: null, start: t, end: t + 1 });
+        t++; continue;
+      }
+      const p = queue.shift();
+      log.push({ t, chosen: p.id, note: 'Antrean: ' + [p.id].concat(queue.map(x => x.id)).join(' → ') + ' (depan = dilayani)' });
+      if (p.start === null) p.start = t;
+      const run = Math.min(quantum, p.rem);
+      rrSlices.push({ i: p.i, id: p.id, start: t, end: t + run });
+      for (let k = 0; k < run; k++) { timeline.push(p.i); t++; p.rem--; }
+      addArrivals();
+      if (p.rem > 0) queue.push(p); else { p.finish = t; done++; }
+    }
+  } else {
+    const preemptive = algo === 'srtf' || algo === 'prio-p';
+    const keyOf = p => algo === 'fcfs' ? p.at : algo === 'sjf' ? p.bt : algo === 'srtf' ? p.rem : p.pr;
+    const keyName = algo === 'fcfs' ? 'AT' : algo === 'sjf' ? 'BT' : algo === 'srtf' ? 'sisa' : 'prioritas';
+    while (done < n && guard++ < 100000) {
+      const ready = P.filter(p => p.at <= t && p.rem > 0);
+      if (!ready.length) { timeline.push(null); t++; cur = -1; continue; }
+      let pick;
+      if (!preemptive && cur >= 0 && P[cur].rem > 0) {
+        pick = P[cur];
+      } else {
+        pick = ready.slice().sort((a, b) =>
+          keyOf(a) - keyOf(b) ||
+          (a.i === cur ? -1 : b.i === cur ? 1 : 0) ||
+          a.at - b.at || a.i - b.i)[0];
+      }
+      if (pick.i !== cur) {
+        const preempted = cur >= 0 && P[cur].rem > 0;
+        log.push({
+          t, chosen: pick.id,
+          note: 'Yang siap: ' + ready.map(p => p.id + ' (' + keyName + ' ' + keyOf(p) + ')').join(', ') +
+            (preempted ? ' · ' + P[cur].id + ' dipotong' : '')
+        });
+      }
+      if (pick.start === null) pick.start = t;
+      pick.rem--;
+      timeline.push(pick.i);
+      t++;
+      cur = pick.i;
+      if (pick.rem === 0) { pick.finish = t; done++; cur = -1; }
+    }
+  }
+
+  const segments = [];
+  timeline.forEach((x, tt) => {
+    const last = segments[segments.length - 1];
+    if (last && last.i === x) last.end = tt + 1;
+    else segments.push({ i: x, id: x === null ? null : P[x].id, start: tt, end: tt + 1 });
+  });
+
+  if (algo === 'rr') { segments.length = 0; rrSlices.forEach(x => segments.push(x)); }
+  let switches = 0, prev = null;
+  segments.forEach(s => {
+    if (s.i === null) return;
+    if (prev !== null && prev !== s.i) switches++;
+    prev = s.i;
+  });
+
+  const rows = P.map(p => {
+    const tt = p.finish - p.at;
+    return { i: p.i, id: p.id, at: p.at, bt: p.bt, pr: p.pr, start: p.start, finish: p.finish, tt, wt: tt - p.bt, rt: p.start - p.at };
+  });
+  const avg = k => rows.reduce((s, r) => s + r[k], 0) / (rows.length || 1);
+  return { rows, segments, total: timeline.length, avgWT: avg('wt'), avgTT: avg('tt'), avgRT: avg('rt'), switches, log };
+}
+
+/* Alokasi partisi dinamis. holes: [ukuran], reqs: [ukuran], strat: first|best|worst */
+function allocate(holes, reqs, strat) {
+  const H = holes.map((s, i) => ({ id: i, size: s, orig: s }));
+  const results = [];
+  reqs.forEach(r => {
+    const fit = H.filter(h => h.size >= r);
+    const totalFree = H.reduce((s, h) => s + h.size, 0);
+    if (!fit.length) {
+      results.push({ req: r, ok: false, totalFree, largest: Math.max(0, ...H.map(h => h.size)) });
+      return;
+    }
+    let pick;
+    if (strat === 'first') pick = fit[0];
+    else if (strat === 'best') pick = fit.reduce((a, b) => (b.size < a.size ? b : a));
+    else pick = fit.reduce((a, b) => (b.size > a.size ? b : a));
+    const before = pick.size;
+    pick.size -= r;
+    results.push({ req: r, ok: true, hole: pick.id, before, after: pick.size });
+  });
+  return { results, holes: H };
+}
+
+/* Paging: addrBits, pageSize (byte), logical (byte), table: array frame per page */
+function pagingCalc(addrBits, pageSize, logical, table) {
+  const offsetBits = Math.round(Math.log2(pageSize));
+  const pageBits = addrBits - offsetBits;
+  const maxAddr = Math.pow(2, addrBits);
+  const page = Math.floor(logical / pageSize);
+  const offset = logical % pageSize;
+  const valid = logical >= 0 && logical < maxAddr;
+  const frame = table[page];
+  const known = frame !== undefined && frame !== null && !isNaN(frame);
+  return {
+    offsetBits, pageBits, numPages: Math.pow(2, pageBits), page, offset, valid, frame, known,
+    physical: known ? frame * pageSize + offset : null
+  };
+}
+
+/* Segmentasi: segs [{base, limit}] */
+function segCalc(segs, s, d) {
+  if (!segs[s]) return { ok: false, reason: 'Segmen ' + s + ' tidak ada di tabel.' };
+  if (d < 0 || d >= segs[s].limit) return { ok: false, reason: 'Offset ' + d + ' ≥ limit ' + segs[s].limit + ' → trap (error alamat).' };
+  return { ok: true, physical: segs[s].base + d };
+}
+
+/* Exponential averaging */
+function expAvg(tau0, alpha, bursts) {
+  const out = [{ n: 0, tau: tau0, t: null }];
+  let tau = tau0;
+  bursts.forEach((tn, k) => {
+    tau = alpha * tn + (1 - alpha) * tau;
+    out.push({ n: k + 1, tau, t: tn });
+  });
+  return out;
+}
+
+/* ===== TAMPILAN & INTERAKSI ===== */
+(function () {
+  const $ = (s, r) => (r || document).querySelector(s);
+  const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const num = n => Number(n).toLocaleString('id-ID');
+  const store = {
+    get(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* abaikan */ } }
+  };
+  const chip = (id, i) => '<span class="pc c' + (i % 8) + '">' + esc(id) + '</span>';
+
+  /* ---------- bobot (titik) ---------- */
+  $$('.dots[data-w]').forEach(el => {
+    const w = +el.dataset.w;
+    el.setAttribute('role', 'img');
+    el.setAttribute('aria-label', 'Bobot ' + w + ' dari 5');
+    el.innerHTML = [1, 2, 3, 4, 5].map(i => '<i class="' + (i <= w ? 'f' : '') + '"></i>').join('');
+  });
+
+  /* ---------- tanda paham + progres ---------- */
+  const babs = $$('section[data-bab]');
+  let paham = store.get('kilat-so-paham') || {};
+  function updProg() {
+    const n = babs.filter(s => paham[s.id]).length;
+    $('#prog').innerHTML = 'Paham <b>' + n + '</b>/' + babs.length;
+  }
+  babs.forEach(s => {
+    const wrap = document.createElement('div');
+    wrap.className = 'done';
+    const b = document.createElement('button');
+    b.type = 'button';
+    const paint = () => { b.className = paham[s.id] ? 'on' : ''; b.textContent = paham[s.id] ? 'Sudah paham ✓' : 'Tandai sudah paham'; b.setAttribute('aria-pressed', paham[s.id] ? 'true' : 'false'); };
+    b.addEventListener('click', () => { paham[s.id] = !paham[s.id]; store.set('kilat-so-paham', paham); paint(); updProg(); });
+    paint();
+    wrap.appendChild(b);
+    s.appendChild(wrap);
+  });
+  updProg();
+
+  /* ---------- nav aktif ---------- */
+  const navLinks = $$('#chips a');
+  const targets = navLinks.map(a => $(a.getAttribute('href')));
+  let ticking = false;
+  function setActive() {
+    ticking = false;
+    let cur = -1;
+    targets.forEach((t, i) => { if (t && t.getBoundingClientRect().top <= 130) cur = i; });
+    navLinks.forEach((a, i) => a.classList.toggle('on', i === cur));
+    if (cur >= 0) {
+      const a = navLinks[cur], box = $('#chips');
+      const l = a.offsetLeft - box.offsetLeft;
+      if (l < box.scrollLeft || l + a.offsetWidth > box.scrollLeft + box.clientWidth) box.scrollTo({ left: Math.max(0, l - 40), behavior: 'auto' });
+    }
+  }
+  window.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(setActive); } }, { passive: true });
+  setActive();
+
+  /* ---------- Gantt + tabel hasil ---------- */
+  function ganttHTML(res) {
+    const total = res.total;
+    const segs = res.segments.map(s => {
+      const d = s.end - s.start;
+      return s.i === null
+        ? '<div class="seg idle" style="--d:' + d + '">idle</div>'
+        : '<div class="seg" style="--d:' + d + ';background:var(--p' + ((s.i % 8) + 1) + ')">' + esc(s.id) + '</div>';
+    }).join('');
+    const times = Array.from(new Set([0].concat(res.segments.map(s => s.end))));
+    const ticks = times.map(t => '<span style="left:' + (t / total * 100) + '%">' + t + '</span>').join('');
+    return '<div class="gantt-wrap"><div style="min-width:' + Math.max(total * 1.6, 12) + 'rem"><div class="gantt" role="img" aria-label="Gantt chart">' + segs + '</div><div class="ticks">' + ticks + '</div></div></div>';
+  }
+  function resultBlock(res, showPr) {
+    const stats =
+      '<div class="stat-row">' +
+      '<div class="stat"><small>AWT</small><b>' + fmt(res.avgWT) + '</b></div>' +
+      '<div class="stat"><small>ATT</small><b>' + fmt(res.avgTT) + '</b></div>' +
+      '<div class="stat"><small>Avg response</small><b>' + fmt(res.avgRT) + '</b></div>' +
+      '<div class="stat"><small>Total waktu</small><b>' + res.total + '</b></div>' +
+      '<div class="stat"><small>Pindah proses</small><b>' + res.switches + '</b></div></div>';
+    const rows = res.rows.map(r =>
+      '<tr><td>' + chip(r.id, r.i) + '</td><td class="num">' + r.at + '</td><td class="num">' + r.bt + '</td>' +
+      (showPr ? '<td class="num">' + r.pr + '</td>' : '') +
+      '<td class="num">' + r.start + '</td><td class="num">' + r.finish + '</td><td class="num"><b>' + r.wt + '</b></td><td class="num"><b>' + r.tt + '</b></td><td class="num">' + r.rt + '</td></tr>').join('');
+    const table = '<div class="tw"><table><thead><tr><th>P</th><th class="num">AT</th><th class="num">BT</th>' + (showPr ? '<th class="num">Pr</th>' : '') +
+      '<th class="num">Start</th><th class="num">Finish</th><th class="num">WT</th><th class="num">TT</th><th class="num">RT</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+    const n = res.rows.length;
+    const how = res.rows.map(r => r.id + ':  TT = ' + r.finish + ' − ' + r.at + ' = ' + r.tt + '   ·   WT = ' + r.tt + ' − ' + r.bt + ' = ' + r.wt).join('<br>') +
+      '<br>AWT = (' + res.rows.map(r => r.wt).join(' + ') + ') / ' + n + ' = ' + res.rows.reduce((s, r) => s + r.wt, 0) + ' / ' + n + ' = <b>' + fmt(res.avgWT) + '</b>' +
+      '<br>ATT = (' + res.rows.map(r => r.tt).join(' + ') + ') / ' + n + ' = <b>' + fmt(res.avgTT) + '</b>';
+    const log = res.log.map(l => 't = ' + l.t + ' → <b>' + esc(l.chosen) + '</b> &nbsp;(' + esc(l.note) + ')').join('<br>');
+    return ganttHTML(res) + stats + table +
+      '<details class="how"><summary>Lihat langkah hitung</summary><div>' + how + '</div></details>' +
+      '<details class="how"><summary>Lihat alasan tiap pemilihan proses</summary><div>' + log + '</div></details>';
+  }
+  function parseProcs(str) {
+    return str.split(',').map(s => { const p = s.split(':'); return { id: p[0], at: +p[1], bt: +p[2], pr: p[3] === undefined ? 1 : +p[3] }; });
+  }
+  $$('[data-demo]').forEach(el => {
+    const algo = el.dataset.algo, q = +(el.dataset.q || 4);
+    const res = simulate(parseProcs(el.dataset.procs), algo, q);
+    el.innerHTML = '<div class="demo-title"><b>' + esc(el.dataset.title) + '</b><span>' + ALGO_NAMES[algo] + (algo === 'rr' ? ' · quantum ' + q : '') + '</span></div>' + resultBlock(res, algo.indexOf('prio') === 0);
+  });
+
+  /* ---------- simulator ---------- */
+  (function () {
+    const sel = $('#sim-algo'), qIn = $('#sim-q'), tbody = $('#sim-rows'), out = $('#sim-out'), msg = $('#sim-msg');
+    sel.innerHTML = Object.keys(ALGO_NAMES).map(k => '<option value="' + k + '">' + ALGO_NAMES[k] + '</option>').join('');
+    let rows = [];
+    const PRESETS = [
+      { t: 'SRTF dari slide', algo: 'srtf', q: 4, rows: [[0, 8, 3], [1, 4, 1], [2, 9, 4], [3, 5, 2]] },
+      { t: 'SJF dengan AT', algo: 'sjf', q: 4, rows: [[0, 6, 3], [5, 8, 1], [7, 7, 4], [2, 3, 2]] },
+      { t: 'Convoy FCFS', algo: 'fcfs', q: 4, rows: [[0, 24, 1], [0, 3, 1], [0, 3, 1]] },
+      { t: 'Round Robin q=4', algo: 'rr', q: 4, rows: [[0, 10, 1], [0, 4, 1], [0, 3, 1]] },
+      { t: 'Priority', algo: 'prio-np', q: 4, rows: [[0, 5, 3], [0, 3, 1], [0, 2, 4], [0, 4, 2]] },
+      { t: 'Ada CPU idle', algo: 'fcfs', q: 4, rows: [[0, 2, 1], [6, 3, 1], [7, 2, 1]] }
+    ];
+    function drawRows() {
+      tbody.innerHTML = rows.map((r, i) =>
+        '<tr><td>' + chip('P' + (i + 1), i) + '</td>' +
+        '<td><input type="number" id="sim-at-' + i + '" value="' + r[0] + '" min="0" max="60" aria-label="Arrival time P' + (i + 1) + '"></td>' +
+        '<td><input type="number" id="sim-bt-' + i + '" value="' + r[1] + '" min="1" max="60" aria-label="Burst time P' + (i + 1) + '"></td>' +
+        '<td><input type="number" id="sim-pr-' + i + '" value="' + r[2] + '" min="0" max="99" aria-label="Prioritas P' + (i + 1) + '"></td></tr>').join('');
+      $$('input', tbody).forEach(inp => inp.addEventListener('input', run));
+    }
+    function readRows() {
+      return rows.map((_, i) => [$('#sim-at-' + i).value, $('#sim-bt-' + i).value, $('#sim-pr-' + i).value]);
+    }
+    function run() {
+      qWrap.hidden = sel.value !== 'rr';
+      const raw = readRows();
+      const procs = [];
+      for (let i = 0; i < raw.length; i++) {
+        const at = Number(raw[i][0]), bt = Number(raw[i][1]), pr = Number(raw[i][2]);
+        if (raw[i].some(v => v === '') || !isFinite(at) || !isFinite(bt) || !isFinite(pr)) { msg.textContent = 'Isi semua kolom dengan angka.'; return; }
+        if (bt < 1) { msg.textContent = 'Burst time (BT) minimal 1.'; return; }
+        if (at < 0) { msg.textContent = 'Arrival time (AT) tidak boleh negatif.'; return; }
+        procs.push({ id: 'P' + (i + 1), at: Math.min(60, Math.round(at)), bt: Math.min(60, Math.round(bt)), pr: Math.round(pr) });
+      }
+      const q = Number(qIn.value);
+      if (sel.value === 'rr' && (!isFinite(q) || q < 1)) { msg.textContent = 'Quantum minimal 1.'; return; }
+      if (!procs.length) { msg.textContent = 'Tambahkan minimal satu proses.'; return; }
+      msg.textContent = '';
+      const algo = sel.value, qq = Math.max(1, Math.round(q) || 1);
+      const res = simulate(procs, algo, qq);
+      let cmp = '<h4 style="margin-top:12px">Bandingkan semua algoritma dengan data yang sama</h4>';
+      const all = Object.keys(ALGO_NAMES).map(k => ({ k, r: simulate(procs, k, qq) }));
+      const best = Math.min.apply(null, all.map(x => x.r.avgWT));
+      cmp += '<div class="tw"><table><thead><tr><th>Algoritma</th><th class="num">AWT</th><th class="num">ATT</th><th class="num">Avg response</th><th class="num">Pindah proses</th></tr></thead><tbody>' +
+        all.map(x => '<tr class="' + (Math.abs(x.r.avgWT - best) < 1e-9 ? 'best' : '') + '"><td>' + ALGO_NAMES[x.k] + (x.k === algo ? ' ◄' : '') + '</td><td class="num">' + fmt(x.r.avgWT) + '</td><td class="num">' + fmt(x.r.avgTT) + '</td><td class="num">' + fmt(x.r.avgRT) + '</td><td class="num">' + x.r.switches + '</td></tr>').join('') +
+        '</tbody></table></div><p style="color:var(--muted);font-size:0.9rem">Baris hijau = AWT terkecil. Biasanya SJF atau SRTF. Round Robin unggul di response time, bukan di AWT.</p>';
+      out.innerHTML = '<div class="demo-title"><b>Hasil: ' + ALGO_NAMES[algo] + (algo === 'rr' ? ' · quantum ' + qq : '') + '</b><span>Waktu 0 sampai ' + res.total + '</span></div>' + resultBlock(res, algo.indexOf('prio') === 0) + cmp;
+    }
+    function load(p) {
+      rows = p.rows.map(r => r.slice());
+      sel.value = p.algo; qIn.value = p.q;
+      drawRows(); run();
+    }
+    const qWrap = $('#sim-q-wrap');
+    $('#sim-presets').innerHTML = PRESETS.map((p, i) => '<button class="btn" type="button" data-p="' + i + '">' + esc(p.t) + '</button>').join('');
+    $$('#sim-presets button').forEach(b => b.addEventListener('click', () => load(PRESETS[+b.dataset.p])));
+    $('#sim-add').addEventListener('click', () => { if (rows.length < 8) { rows = readRows().map(r => r.map(Number)); rows.push([0, 3, 1]); drawRows(); run(); } });
+    $('#sim-del').addEventListener('click', () => { if (rows.length > 1) { rows = readRows().map(r => r.map(Number)); rows.pop(); drawRows(); run(); } });
+    sel.addEventListener('change', run);
+    qIn.addEventListener('input', run);
+    load(PRESETS[0]);
+  })();
+
+  /* ---------- exponential averaging ---------- */
+  (function () {
+    const t0 = $('#ea-tau0'), al = $('#ea-alpha'), bs = $('#ea-bursts'), out = $('#ea-out'), msg = $('#ea-msg');
+    function run() {
+      const tau0 = Number(t0.value), a = Number(al.value);
+      const bursts = bs.value.split(',').map(s => s.trim()).filter(Boolean).map(Number);
+      if (!isFinite(tau0) || t0.value === '' || !isFinite(a) || al.value === '' || a < 0 || a > 1) { msg.textContent = 'Isi τ awal dengan angka dan α antara 0 dan 1.'; return; }
+      if (!bursts.length || bursts.some(x => !isFinite(x) || x < 0) || bursts.length > 20) { msg.textContent = 'Isi burst dengan angka dipisah koma (maksimal 20).'; return; }
+      msg.textContent = '';
+      const r = expAvg(tau0, a, bursts);
+      out.innerHTML = '<div class="tw"><table><thead><tr><th class="num">n</th><th class="num">t<sub>n</sub> (burst nyata)</th><th class="num">τ<sub>n</sub> (prediksi)</th><th>Hitung</th><th class="num">τ<sub>n+1</sub></th></tr></thead><tbody>' +
+        bursts.map((t, i) => '<tr><td class="num">' + (i + 1) + '</td><td class="num">' + fmt(t) + '</td><td class="num">' + fmt(r[i].tau) + '</td><td class="mono">' + fmt(a) + '×' + fmt(t) + ' + ' + fmt(1 - a) + '×' + fmt(r[i].tau) + '</td><td class="num"><b>' + fmt(r[i + 1].tau) + '</b></td></tr>').join('') +
+        '</tbody></table></div>';
+    }
+    [t0, al, bs].forEach(e => e.addEventListener('input', run));
+    run();
+  })();
+
+  /* ---------- status proses ---------- */
+  (function () {
+    const T = {
+      NEW: { admit: 'READY' }, READY: { dispatch: 'RUNNING' },
+      RUNNING: { preempt: 'READY', wait: 'WAITING', exit: 'TERMINATED' }, WAITING: { ioend: 'READY' }, TERMINATED: {}
+    };
+    const EV = {
+      admit: ['Diterima (admit)', 'Long-term scheduler memasukkan proses ke ready queue.'],
+      dispatch: ['Dapat CPU (dispatch)', 'Short-term scheduler memilih, dispatcher menyerahkan CPU.'],
+      preempt: ['Quantum habis / diserobot', 'Jatah waktu habis atau ada proses lebih penting. Proses kembali antre di READY.'],
+      wait: ['Minta I/O / menunggu event', 'Proses tidak bisa lanjut tanpa I/O atau event, jadi CPU dilepas.'],
+      ioend: ['I/O selesai', 'Yang ditunggu sudah datang. Proses tidak langsung jalan, ia harus antre di READY.'],
+      exit: ['Selesai (exit)', 'Proses menyelesaikan pekerjaannya.']
+    };
+    const EDGE = { admit: 'e-admit', dispatch: 'e-dispatch', preempt: 'e-preempt', wait: 'e-wait', ioend: 'e-ioend', exit: 'e-exit' };
+    function why(ev, st) {
+      if (st === 'TERMINATED') return 'Proses sudah TERMINATED dan tidak bisa berubah lagi. Tekan "Ulang dari NEW".';
+      if (ev === 'dispatch' && st === 'WAITING') return 'Proses WAITING tidak boleh langsung mendapat CPU. Setelah I/O selesai ia harus ke READY dulu. Tidak ada panah WAITING → RUNNING.';
+      if (ev === 'dispatch' && st === 'NEW') return 'Proses NEW harus diterima ke READY dulu sebelum bisa dapat CPU.';
+      if (ev === 'ioend' && st === 'RUNNING') return 'Proses RUNNING sedang memakai CPU, ia tidak sedang menunggu I/O.';
+      if (ev === 'ioend') return 'Hanya proses WAITING yang menunggu I/O. Proses ' + st + ' tidak sedang menunggu.';
+      if (ev === 'wait' && st === 'READY') return 'READY belum memegang CPU, jadi tidak bisa meminta I/O. Yang minta I/O adalah proses RUNNING.';
+      if (ev === 'wait' || ev === 'exit' || ev === 'preempt') return 'Kejadian ini hanya terjadi pada proses yang sedang RUNNING. Sekarang statusnya ' + st + '.';
+      if (ev === 'admit') return 'Hanya proses NEW yang bisa diterima (admit). Sekarang statusnya ' + st + '.';
+      return 'Perpindahan itu tidak ada di diagram.';
+    }
+    let cur = 'NEW', timer = null;
+    const status = $('#sm-status');
+    function paint(text, err) {
+      $$('.sm .node').forEach(n => n.classList.toggle('cur', n.id === 'n-' + cur));
+      status.className = 'sm-status' + (err ? ' err' : '');
+      status.innerHTML = text;
+    }
+    $('#sm-btns').innerHTML = Object.keys(EV).map(k => '<button type="button" class="btn" data-ev="' + k + '">' + EV[k][0] + '</button>').join('');
+    $$('#sm-btns button').forEach(b => b.addEventListener('click', () => {
+      const ev = b.dataset.ev, nxt = T[cur][ev];
+      if (!nxt) { paint('<b>Tidak bisa.</b> ' + why(ev, cur), true); return; }
+      const from = cur; cur = nxt;
+      const edge = document.getElementById(EDGE[ev]);
+      edge.classList.add('hot'); clearTimeout(timer); timer = setTimeout(() => edge.classList.remove('hot'), 1100);
+      paint('<b>' + from + ' → ' + cur + '.</b> ' + EV[ev][1]);
+    }));
+    $('#sm-reset').addEventListener('click', () => { cur = 'NEW'; paint('Proses baru dibuat, statusnya <b>NEW</b>. Mulai dengan "Diterima (admit)".'); });
+    paint('Proses baru dibuat, statusnya <b>NEW</b>. Mulai dengan "Diterima (admit)".');
+  })();
+
+  /* ---------- fit memori ---------- */
+  (function () {
+    const hIn = $('#fit-holes'), rIn = $('#fit-reqs'), out = $('#fit-out'), msg = $('#fit-msg');
+    const P = [
+      ['Slide: 180', '100, 500, 200, 300', '180'],
+      ['Empat proses', '100, 500, 200, 300, 600', '212, 417, 112, 426'],
+      ['External fragmentation', '2, 3, 4', '8']
+    ];
+    $('#fit-presets').innerHTML = P.map((p, i) => '<button class="btn" type="button" data-i="' + i + '">' + p[0] + '</button>').join('');
+    $$('#fit-presets button').forEach(b => b.addEventListener('click', () => { const p = P[+b.dataset.i]; hIn.value = p[1]; rIn.value = p[2]; run(); }));
+    const parse = s => s.split(',').map(x => x.trim()).filter(Boolean).map(Number);
+    function run() {
+      const holes = parse(hIn.value), reqs = parse(rIn.value);
+      if (!holes.length || !reqs.length || holes.concat(reqs).some(x => !isFinite(x) || x <= 0)) { msg.textContent = 'Isi lubang dan permintaan dengan angka positif dipisah koma.'; return; }
+      if (holes.length > 10 || reqs.length > 8) { msg.textContent = 'Maksimal 10 lubang dan 8 permintaan.'; return; }
+      msg.textContent = '';
+      const names = { first: 'First fit', best: 'Best fit', worst: 'Worst fit' };
+      out.innerHTML = '<div class="grid3">' + ['first', 'best', 'worst'].map(st => {
+        const r = allocate(holes, reqs, st);
+        const lines = r.results.map(x => x.ok
+          ? '<li><b>' + x.req + '</b> → lubang ke-' + (x.hole + 1) + ' (' + x.before + '), sisa ' + x.after + '</li>'
+          : '<li><b>' + x.req + '</b> → <span style="color:var(--bad)"><b>gagal</b></span>. Total kosong ' + x.totalFree + ', lubang terbesar ' + x.largest + (x.totalFree >= x.req ? ' (external fragmentation)' : '') + '</li>').join('');
+        const bar = '<div class="membar" aria-label="Kondisi lubang akhir">' + r.holes.map(h => '<div class="hole" style="--w:' + h.orig + '"><i class="used" style="--u:' + ((h.orig - h.size) / h.orig * 100) + '%"></i><span>' + h.size + '/' + h.orig + '</span></div>').join('') + '</div>';
+        return '<div class="card"><span class="kw">' + names[st] + '</span><ul class="tight">' + lines + '</ul>' + bar + '<small style="color:var(--muted)">Isi kotak: sisa/awal. Biru-hijau = terpakai.</small></div>';
+      }).join('') + '</div>';
+    }
+    [hIn, rIn].forEach(e => e.addEventListener('input', run));
+    run();
+  })();
+
+  /* ---------- paging ---------- */
+  (function () {
+    const bitsS = $('#pg-bits'), sizeS = $('#pg-size'), addr = $('#pg-addr'), tab = $('#pg-table'), out = $('#pg-out'), msg = $('#pg-msg');
+    function run() {
+      const bits = +bitsS.value, size = +sizeS.value, a = Number(addr.value);
+      const table = tab.value.split(',').map(s => s.trim()).filter(Boolean).map(Number);
+      if (addr.value === '' || !isFinite(a) || a < 0 || Math.floor(a) !== a) { msg.textContent = 'Alamat logis harus bilangan bulat tidak negatif.'; return; }
+      if (table.some(x => !isFinite(x) || x < 0 || Math.floor(x) !== x)) { msg.textContent = 'Page table berisi nomor frame (bilangan bulat ≥ 0) dipisah koma.'; return; }
+      const c = pagingCalc(bits, size, a, table);
+      if (c.pageBits < 1) { msg.textContent = 'Ukuran page terlalu besar untuk lebar alamat ini.'; return; }
+      msg.textContent = '';
+      let h = '<div class="bitbar" aria-label="Pembagian bit alamat"><div class="pg" style="--b:' + c.pageBits + '">Page number · ' + c.pageBits + ' bit</div><div class="of" style="--b:' + c.offsetBits + '">Offset · ' + c.offsetBits + ' bit</div></div>' +
+        '<div class="formula">Offset = log₂(' + num(size) + ') = <b>' + c.offsetBits + ' bit</b><br>Page number = ' + bits + ' − ' + c.offsetBits + ' = <b>' + c.pageBits + ' bit</b> → ' + num(c.numPages) + ' page dalam ruang alamat</div>';
+      if (!c.valid) {
+        h += '<div class="note trap"><b>Di luar jangkauan</b><p>Alamat ' + num(a) + ' ≥ 2<sup>' + bits + '</sup> = ' + num(Math.pow(2, bits)) + '. Alamat ini tidak muat dalam ' + bits + ' bit.</p></div>';
+      } else {
+        h += '<div class="formula">Page = ⌊' + num(a) + ' / ' + num(size) + '⌋ = <b>' + num(c.page) + '</b><br>Offset = ' + num(a) + ' mod ' + num(size) + ' = <b>' + num(c.offset) + '</b></div>';
+        if (c.known) h += '<div class="formula">Page table[' + c.page + '] = frame <b>' + c.frame + '</b><br>Physical = ' + c.frame + ' × ' + num(size) + ' + ' + num(c.offset) + ' = <b>' + num(c.physical) + '</b></div>';
+        else h += '<div class="note trap"><b>Page belum ada di page table</b><p>Tabel hanya mengisi page 0 sampai ' + (table.length - 1) + '. Page ' + num(c.page) + ' tidak punya frame. Pada sistem nyata ini berarti page fault atau akses tidak valid.</p></div>';
+      }
+      out.innerHTML = h;
+    }
+    [bitsS, sizeS, addr, tab].forEach(e => e.addEventListener('input', run));
+    run();
+  })();
+
+  /* ---------- segmentasi ---------- */
+  (function () {
+    const segs = [[1400, 1000], [6300, 400], [4300, 400], [3200, 1100]];
+    $('#sg-rows').innerHTML = segs.map((s, i) => '<tr><td><b>' + i + '</b></td><td><input type="number" id="sg-b' + i + '" value="' + s[0] + '" min="0" aria-label="Base segmen ' + i + '"></td><td><input type="number" id="sg-l' + i + '" value="' + s[1] + '" min="1" aria-label="Limit segmen ' + i + '"></td></tr>').join('');
+    const out = $('#sg-out');
+    function run() {
+      const tbl = segs.map((_, i) => ({ base: Number($('#sg-b' + i).value), limit: Number($('#sg-l' + i).value) }));
+      const s = Number($('#sg-s').value), d = Number($('#sg-d').value);
+      if (tbl.some(x => !isFinite(x.base) || !isFinite(x.limit)) || !isFinite(s) || !isFinite(d) || $('#sg-d').value === '' || $('#sg-s').value === '') { out.innerHTML = '<div class="msg">Isi semua kolom dengan angka.</div>'; return; }
+      const r = segCalc(tbl, s, d);
+      out.innerHTML = r.ok
+        ? '<div class="formula">Cek: offset ' + d + ' &lt; limit ' + tbl[s].limit + ' ✓<br>Physical = base + offset = ' + tbl[s].base + ' + ' + d + ' = <b>' + r.physical + '</b></div>'
+        : '<div class="note trap"><b>Trap</b><p>' + esc(r.reason) + '</p></div>';
+    }
+    $$('#sg input').forEach(e => e.addEventListener('input', run));
+    run();
+  })();
+
+  /* ---------- kuis ---------- */
+  (function () {
+    const Q = [
+      { t: 'Dasar', q: 'Pernyataan yang paling tepat tentang kernel adalah…', o: ['Seluruh sistem operasi, termasuk tampilan GUI', 'Inti OS yang berinteraksi langsung dengan hardware', 'Nama lain untuk RAM', 'Aplikasi bawaan yang dipasang pabrik'], a: 1, e: 'Kernel hanyalah inti OS (proses, memori, I/O, proteksi dasar). Antarmuka dan utilitas ikut dalam OS tetapi bukan kernel.' },
+      { t: 'Dasar', q: 'Ciri utama generasi ke-3 sistem operasi adalah…', o: ['Vacuum tube, belum ada OS', 'Transistor dan batch', 'IC dengan multiprogramming dan timesharing', 'LSI dan personal computer'], a: 2, e: 'G1 vacuum tube, G2 transistor + batch, G3 IC + multiprogramming + timesharing + UNIX, G4 LSI + PC.' },
+      { t: 'Dasar', q: 'Alat pacu jantung membutuhkan OS jenis…', o: ['Batch', 'Hard real-time', 'Soft real-time', 'Network OS'], a: 1, e: 'Deadline wajib dipenuhi. Telat berarti fatal. Itulah hard real-time.' },
+      { t: 'Proses', q: 'Sebuah proses selesai menunggu I/O dan siap berjalan lagi. Ia pindah ke status…', o: ['RUNNING', 'WAITING', 'READY', 'TERMINATED'], a: 2, e: 'Tidak ada panah WAITING → RUNNING. Setelah I/O selesai, proses antre di READY menunggu CPU.' },
+      { t: 'Proses', q: 'Bagian PCB yang menunjuk instruksi berikutnya yang akan dijalankan adalah…', o: ['PID', 'Program Counter', 'Pointer', 'Memory limits'], a: 1, e: 'PID = identitas proses. Program Counter = alamat instruksi berikutnya. Pointer menunjuk PCB lain di queue.' },
+      { t: 'Proses', q: 'Pendekatan deadlock yang tugasnya mengecek apakah deadlock sudah terjadi adalah…', o: ['Prevention', 'Avoidance', 'Detection', 'Recovery'], a: 2, e: 'Prevention = jangan sampai terjadi, Avoidance = hindari kondisi berbahaya, Detection = cek sudah terjadi atau belum, Recovery = bereskan setelahnya.' },
+      { t: 'Proses', q: 'Scheduler yang memilih proses dari ready queue untuk diberi CPU, dan paling sering berjalan, adalah…', o: ['Short-term scheduler', 'Long-term scheduler', 'Medium-term scheduler', 'Dispatcher'], a: 0, e: 'Short-term = CPU scheduler, paling cepat dan paling sering. Dispatcher bukan scheduler: ia yang menyerahkan CPU setelah dipilih.' },
+      { t: 'Scheduling', q: 'FCFS, semua AT = 0, urutan P1 (BT 24), P2 (BT 3), P3 (BT 3). Berapa AWT?', o: ['3', '10', '17', '27'], a: 2, e: 'WT = 0, 24, 27 → (0 + 24 + 27)/3 = 17. Inilah convoy effect. Dengan SJF AWT-nya hanya 3.' },
+      { t: 'Scheduling', q: 'SRTF: P1 (AT 0, BT 8), P2 (1, 4), P3 (2, 9), P4 (3, 5). Berapa WT P1?', o: ['0', '7', '9', '17'], a: 2, e: 'P1 selesai di 17, TT = 17, WT = 17 − 8 = 9. Angka 17 adalah TT-nya, jangan tertukar.' },
+      { t: 'Scheduling', q: 'SJF non-preemptive: P1 (AT 0, BT 6), P2 (5, 8), P3 (7, 7), P4 (2, 3). Urutan eksekusi?', o: ['P1, P2, P3, P4', 'P1, P4, P3, P2', 'P1, P4, P2, P3', 'P4, P1, P3, P2'], a: 1, e: 'Di t = 0 hanya P1 datang. Di t = 6 pilih P4 (BT 3) daripada P2 (8). Di t = 9 pilih P3 (7) daripada P2 (8). Terakhir P2.' },
+      { t: 'Scheduling', q: 'Round Robin quantum 4, semua AT = 0: P1 = 10, P2 = 4, P3 = 3. Berapa WT P3?', o: ['3', '4', '8', '11'], a: 2, e: 'Urutan: P1 0–4, P2 4–8, P3 8–11. P3 baru mulai di 8, WT = 11 − 0 − 3 = 8. Angka 11 adalah TT-nya.' },
+      { t: 'Scheduling', q: 'Priority non-preemptive (angka kecil = tinggi), semua AT = 0: P1 pr 3, P2 pr 1, P3 pr 4, P4 pr 2. Urutan?', o: ['P1, P2, P3, P4', 'P3, P1, P4, P2', 'P2, P4, P1, P3', 'P2, P1, P4, P3'], a: 2, e: 'Urut prioritas 1 → 2 → 3 → 4 sehingga P2, P4, P1, P3.' },
+      { t: 'Scheduling', q: 'Proses BT 5 datang di detik 2 dan selesai di detik 12. WT-nya?', o: ['5', '7', '10', '12'], a: 0, e: 'TT = 12 − 2 = 10. WT = TT − BT = 10 − 5 = 5.' },
+      { t: 'Memori', q: 'Lubang 100, 500, 200, 300 dan proses 180. Best fit memilih lubang…', o: ['100', '200', '300', '500'], a: 1, e: 'Yang muat: 500, 200, 300. Best fit mengambil yang terkecil, yaitu 200. First dan worst fit sama-sama memilih 500.' },
+      { t: 'Memori', q: 'Alamat 32 bit, ukuran page 8 KB. Pembagian bitnya?', o: ['Page number 19 bit, offset 13 bit', 'Page number 20 bit, offset 12 bit', 'Page number 13 bit, offset 19 bit', 'Page number 18 bit, offset 14 bit'], a: 0, e: '8 KB = 2¹³ sehingga offset 13 bit. Page number = 32 − 13 = 19 bit.' },
+      { t: 'Memori', q: 'Proses diberi blok 16 KB tetapi hanya memakai 10 KB. Sisa 6 KB itu disebut…', o: ['External fragmentation', 'Compaction', 'Thrashing', 'Internal fragmentation'], a: 3, e: 'Sisa berada di dalam blok yang sudah dialokasikan, itulah internal fragmentation. External = lubang terpisah di antara blok.' }
+    ];
+    const topics = ['Semua', 'Dasar', 'Proses', 'Scheduling', 'Memori'];
+    const ans = {};
+    let filt = 'Semua';
+    const quiz = $('#quiz'), score = $('#q-score'), fil = $('#q-filter');
+    fil.innerHTML = topics.map(t => '<button type="button" class="btn' + (t === filt ? ' on' : '') + '" data-t="' + t + '">' + t + '</button>').join('');
+    $$('#q-filter button').forEach(b => b.addEventListener('click', () => { filt = b.dataset.t; $$('#q-filter button').forEach(x => x.classList.toggle('on', x === b)); draw(); }));
+    function sc() {
+      const done = Object.keys(ans).length, ok = Object.keys(ans).filter(k => ans[k] === Q[k].a).length;
+      const per = topics.slice(1).map(t => {
+        const idx = Q.map((q, i) => q.t === t ? i : -1).filter(i => i >= 0);
+        const d = idx.filter(i => i in ans).length, o = idx.filter(i => ans[i] === Q[i].a).length;
+        return '<span>' + t + ' <b>' + o + '/' + idx.length + '</b></span>';
+      }).join('');
+      score.innerHTML = '<span>Benar <b>' + ok + '</b> dari ' + done + ' terjawab (' + Q.length + ' soal)</span>' + per;
+    }
+    function draw() {
+      quiz.innerHTML = Q.map((q, i) => ({ q, i })).filter(x => filt === 'Semua' || x.q.t === filt).map(x => {
+        const q = x.q, i = x.i, picked = ans[i];
+        const opts = q.o.map((o, j) => {
+          let c = 'opt';
+          if (picked !== undefined) { if (j === q.a) c += ' ok'; else if (j === picked) c += ' no'; }
+          return '<button type="button" class="' + c + '" data-i="' + i + '" data-j="' + j + '"' + (picked !== undefined ? ' disabled' : '') + '><b>' + 'ABCD'[j] + '</b><span>' + esc(o) + '</span></button>';
+        }).join('');
+        const ex = picked !== undefined ? '<div class="expl"><b>' + (picked === q.a ? 'Benar.' : 'Belum tepat.') + '</b> ' + esc(q.e) + '</div>' : '';
+        return '<div class="q-card"><span class="topic">' + q.t + ' · soal ' + (i + 1) + '</span><p class="q">' + esc(q.q) + '</p><div class="opts">' + opts + '</div>' + ex + '</div>';
+      }).join('');
+      $$('#quiz .opt').forEach(b => b.addEventListener('click', () => { ans[+b.dataset.i] = +b.dataset.j; draw(); }));
+      sc();
+    }
+    $('#q-reset').addEventListener('click', () => { Object.keys(ans).forEach(k => delete ans[k]); draw(); });
+    draw();
+  })();
+})();
+</script>
+
+</body>
+</html>
